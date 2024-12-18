@@ -106,3 +106,23 @@ plant_erd sqlite3 --database $SQLITE_PATH
 sqlite3 $SQLITE_PATH .schema > $ERD_PATH/$PROJECT_NAME.sql
 
 ```
+
+#### nistr-relay-pip
+
+
+``` bash
+
+export ERD_PATH='./nostr-relay-pip'
+export PROJECT_NAME='nostr-relay-pip'
+export SQLITE_PATH="$(pwd)/build/nostr.sqlite3"
+export SQLITE_URL=sqlite:///$SQLITE_PATH
+
+
+mkdir $ERD_PATH
+eralchemy2 -i $SQLITE_URL -o $ERD_PATH/$PROJECT_NAME.pdf
+eralchemy2 -i $SQLITE_URL -o $ERD_PATH/$PROJECT_NAME.md
+eralchemy2 -i $SQLITE_URL -o $ERD_PATH/$PROJECT_NAME.png
+eralchemy2 -i $SQLITE_URL -o $ERD_PATH/$PROJECT_NAME.jpg
+sqlite3 $SQLITE_PATH .schema > $ERD_PATH/$PROJECT_NAME.sql
+
+```

@@ -71,4 +71,4 @@ CREATE TABLE IF NOT EXISTS nostr_scraping_logs (
     job_previous_status VARCHAR,
     job_updated_status VARCHAR,
     log_ingested_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)
+);

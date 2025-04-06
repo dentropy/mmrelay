@@ -11,6 +11,16 @@ CREATE TABLE IF NOT EXISTS nostr_events (
     raw_event VARCHAR NOT NULL UNIQUE
 );
 
+CREATE TABLE IF NOT EXISTS nostr_event_on_relay (
+    event_id VARCHAR,
+    relay_url VARCHAR,
+    CONSTRAINT fk_nostr_event_relay_metadata
+        FOREIGN KEY (event_id)
+        REFERENCES nostr_events (event_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS nostr_event_tags (
     event_id VARCHAR,
     first_tag VARCHAR,

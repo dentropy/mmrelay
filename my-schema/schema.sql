@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS nostr_events (
 CREATE TABLE IF NOT EXISTS nostr_event_on_relay (
     event_id VARCHAR,
     relay_url VARCHAR,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_nostr_event_relay_metadata
         FOREIGN KEY (event_id)
         REFERENCES nostr_events (event_id)

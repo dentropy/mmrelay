@@ -43,6 +43,21 @@ CREATE TABLE IF NOT EXISTS nip05_metadata (
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS nostr_scraping_jobs (
+    job_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    job_name VARCHAR,
+    job_input JSON,
+    job_status VARCHAR,
+    job_last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS nostr_scraping_logs (
-    
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    job_id UUID,
+    job_name VARCHAR,
+    job_input JSONB,
+    job_result JSONB,
+    job_previous_status VARCHAR,
+    job_updated_status VARCHAR,
+    log_ingested_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )

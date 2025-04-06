@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS nostr_scraping_jobs (
     job_name VARCHAR,
     job_input JSON,
     job_status VARCHAR,
+    num_retries INTEGER,
     job_last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

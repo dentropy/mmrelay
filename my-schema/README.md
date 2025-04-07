@@ -22,24 +22,49 @@ psql $PG_CONN_STRING -f ./database/delete.sql
 #### Job Queue Querries
 
 ``` sql
+
 INSERT INTO nostr_scraping_jobs (
-    job_name,
-    job_input,
-    job_status
+    activity_name,
+    activity_input,
+    activity_status
 ) VALUES (
-    'John',
+    'scrape.nip05.0.0.1',
     '{"note": "Preferred customer"}',
     'TODO'
 );
 
 select * from nostr_scraping_jobs;
 
+INSERT INTO nostr_scraping_jobs (
+    activity_name,
+    activity_input,
+    activity_status
+) VALUES (
+    'scrape.nip05.0.0.1',
+    '{"internet_identifier": "fiatjaf@fiatjaf.com}',
+    'TODO'
+);
+
+select * from nostr_scraping_jobs;
+
 UPDATE nostr_scraping_jobs
-SET job_status = 'Running'
+SET 
+    activity_status = 'Running',
+    worker_id = 'worker001'
 WHERE job_id = (
     SELECT job_id
     FROM nostr_scraping_jobs
-    WHERE job_status = 'TODO'
+    WHERE 
+        activity_status = 'TODO'
+        and activity_name in (
+            'scrape.pubkey.from.relay.0.0.1',
+            'scrape.replies.to.thread.from.relay.0.0.1',
+            'scrape.reactions.to.thread.from.relay.0.0.1',
+            'scrape.reactions.to.thread.from.relay.0.0.1',
+            'scrape.follows.of.pubkey.from.relay.0.0.1',
+            'scrape.badges.to.publey.from.relay.0.0.1',
+            'scrape.nip05.0.0.1'
+        )
     ORDER BY created_at DESC
     LIMIT 1
 )

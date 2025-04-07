@@ -55,11 +55,12 @@ CREATE TABLE IF NOT EXISTS nip05_metadata (
 );
 
 CREATE TABLE IF NOT EXISTS nostr_scraping_jobs (
-    job_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    job_name VARCHAR NOT NULL,
-    job_input JSON NOT NULL,
-    job_status VARCHAR NOT NULL,
+    activity_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    activity_name VARCHAR NOT NULL,
+    activity_input JSON NOT NULL,
+    activity_status VARCHAR NOT NULL,
     num_retries INTEGER,
+    worker_id VARCHAR,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -77,13 +78,14 @@ BEFORE UPDATE ON nostr_scraping_jobs
 FOR EACH ROW
 EXECUTE PROCEDURE trigger_set_timestamp();
 
-CREATE TABLE IF NOT EXISTS nostr_scraping_logs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    job_id UUID,
-    job_name VARCHAR,
-    job_input JSONB,
-    job_result JSONB,
-    job_previous_status VARCHAR,
-    job_updated_status VARCHAR,
-    log_ingested_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- --- TODO
+-- CREATE TABLE IF NOT EXISTS nostr_scraping_logs (
+--     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--     job_id UUID,
+--     job_name VARCHAR,
+--     job_input JSONB,
+--     job_result JSONB,
+--     job_previous_status VARCHAR,
+--     job_updated_status VARCHAR,
+--     log_ingested_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- );

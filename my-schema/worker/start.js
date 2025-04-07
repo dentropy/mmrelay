@@ -82,7 +82,7 @@ async function check_jobs() {
                     const json_schema_failed_query = `
                     UPDATE nostr_scraping_jobs
                     SET
-                        activity_status = 'Failed'
+                        activity_status = 'ERROR'
                     WHERE activity_id = ($1)
                     RETURNING *;
                     `

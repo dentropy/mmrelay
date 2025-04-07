@@ -56,12 +56,26 @@ CREATE TABLE IF NOT EXISTS nip05_metadata (
 
 CREATE TABLE IF NOT EXISTS nostr_scraping_jobs (
     job_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    job_name VARCHAR,
-    job_input JSON,
-    job_status VARCHAR,
+    job_name VARCHAR NOT NULL,
+    job_input JSON NOT NULL,
+    job_status VARCHAR NOT NULL,
     num_retries INTEGER,
-    job_last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE OR REPLACE FUNCTION trigger_set_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER set_timestamp_on_nostr_scraping_jobs
+BEFORE UPDATE ON nostr_scraping_jobs
+FOR EACH ROW
+EXECUTE PROCEDURE trigger_set_timestamp();
 
 CREATE TABLE IF NOT EXISTS nostr_scraping_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

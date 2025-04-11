@@ -5,11 +5,13 @@ CREATE TABLE IF NOT EXISTS nostr_events (
     pubkey VARCHAR,
     sig VARCHAR,
     content VARCHAR,
-    content_sha256 VARCHAR,
-    content_is_json BOOLEAN,
-    content_json JSONB,
-    raw_event VARCHAR NOT NULL UNIQUE
+    raw_event VARCHAR NOT NULL UNIQUE,
+    is_verified BOOLEAN
 );
+
+-- content_sha256 VARCHAR,
+-- content_is_json BOOLEAN,
+-- content_json JSONB,
 
 CREATE TABLE IF NOT EXISTS nostr_event_on_relay (
     event_id VARCHAR,
@@ -79,13 +81,13 @@ FOR EACH ROW
 EXECUTE PROCEDURE trigger_set_timestamp();
 
 -- --- TODO
--- CREATE TABLE IF NOT EXISTS nostr_scraping_logs (
---     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
---     job_id UUID,
---     job_name VARCHAR,
---     job_input JSONB,
---     job_result JSONB,
---     job_previous_status VARCHAR,
---     job_updated_status VARCHAR,
---     log_ingested_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
--- );
+CREATE TABLE IF NOT EXISTS nostr_scraping_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    activity_id UUID,
+    activity_name VARCHAR,
+    activity_input JSONB,
+    activity_output JSONB,
+    activity_previous_status VARCHAR,
+    activity_updated_status VARCHAR,
+    log_ingested_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

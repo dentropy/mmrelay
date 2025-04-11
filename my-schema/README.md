@@ -73,3 +73,23 @@ RETURNING *;
 select * from nostr_scraping_jobs;
 
 ```
+
+#### Scrape pubkey from Specific Relay
+
+``` SQL
+
+INSERT INTO nostr_scraping_jobs (
+    activity_name,
+    activity_input,
+    activity_status
+) VALUES (
+    'scrape_pubkey_from_specific_relay',
+    '{
+      "authors": ["2cd173ccf1b7fdf150177961442091e3c0273fd96d815113d8fefe24efcd65f8"],
+      "relays": ["wss://relay.mememaps.net"],
+	  "limit": 3
+    }',
+    'TODO'
+);
+
+select * from nostr_scraping_jobs;

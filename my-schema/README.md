@@ -41,7 +41,7 @@ INSERT INTO nostr_scraping_jobs (
     activity_status
 ) VALUES (
     'scrape.nip05.0.0.1',
-    '{"internet_identifier": "fiatjaf@fiatjaf.com}',
+    '{"internet_identifier": "fiatjaf@fiatjaf.com"}',
     'TODO'
 );
 

@@ -59,13 +59,31 @@ CREATE TABLE IF NOT EXISTS nip05_metadata (
 CREATE TABLE IF NOT EXISTS nostr_scraping_jobs (
     activity_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     activity_name VARCHAR NOT NULL,
-    activity_input JSON NOT NULL,
+    activity_input JSONB,
+    activity_input_hash VARCHAR,
+    activity_output JSONB,
+    activity_output_hash VARCHAR,
     activity_status VARCHAR NOT NULL,
     num_retries INTEGER,
     worker_id VARCHAR,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS nostr_scraping_job_dependencies (
+    activity_id UUID,
+    dependent_activity_id UUID,
+    CONSTRAINT fk_nostr_scraping_job_dependencies_activity_id
+        FOREIGN KEY (activity_id)
+        REFERENCES nostr_scraping_jobs (activity_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+    CONSTRAINT fk_nostr_scraping_job_dependencies_dependent_activity_id
+        FOREIGN KEY (dependent_activity_id)
+        REFERENCES nostr_scraping_jobs (activity_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+)
 
 CREATE OR REPLACE FUNCTION trigger_set_timestamp()
 RETURNS TRIGGER AS $$
@@ -86,7 +104,9 @@ CREATE TABLE IF NOT EXISTS nostr_scraping_logs (
     activity_id UUID,
     activity_name VARCHAR,
     activity_input JSONB,
+    activity_input_hash VARCHAR,
     activity_output JSONB,
+    activity_output_hash VARCHAR,
     activity_previous_status VARCHAR,
     activity_updated_status VARCHAR,
     log_ingested_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP

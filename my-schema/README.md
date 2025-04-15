@@ -81,7 +81,9 @@ select * from nostr_scraping_jobs;
 INSERT INTO nostr_scraping_jobs (
     activity_name,
     activity_input,
-    activity_status
+    activity_status,
+    activity_type,
+    activity_input_hash,
 ) VALUES (
     'scrape_pubkey_from_specific_relay',
     '{
@@ -89,7 +91,8 @@ INSERT INTO nostr_scraping_jobs (
       "relays": ["wss://relay.mememaps.net"],
 	  "limit": 3
     }',
-    'TODO'
+    'TODO',
+    'WORKFLOW',
 );
 
 select * from nostr_scraping_jobs;

@@ -1,7 +1,7 @@
 import { config } from 'dotenv';
 import pg from 'pg'
 import Ajv from "ajv";
-import { scrape_pubkey_from_specific_relay } from "./activities/scrape_pubkey_from_specific_relay.js"
+import { scrape_pubkey_from_specific_relay_root } from "./activities/scrape_nostr_filter_pagiated_workflow.js"
 import { validateEvent, verifyEvent } from 'nostr-tools';
 // Connection to Postgres Database
 const { Pool, Client } = pg
@@ -24,9 +24,9 @@ if ("now" in result.rows[0]) {
     process.exit()
 }
 
-const ACTIVITY_scrape_pubkey_from_specific_relay = new scrape_pubkey_from_specific_relay()
+const scrape_pubkey_from_specific_relay_root = new scrape_pubkey_from_specific_relay_root()
 let ACTIVITIES_LIST = [
-    ACTIVITY_scrape_pubkey_from_specific_relay
+    scrape_pubkey_from_specific_relay_root
 ]
 let ACTIVITY_NAMES = []
 for (const activity of ACTIVITIES_LIST) {
@@ -72,9 +72,9 @@ async function check_jobs() {
         for (const activity of ACTIVITIES_LIST) {
             let activity_result
             if (activity.activity_name == job_result.rows[0].activity_name) {
-                // JSON Schema Validation
+                // STEP: JSON Schema Validation
                 if (activity.validate(job_result.rows[0].activity_input)) {
-                    // Run Activity
+                    // STEP: Run Activity
                     activity_result = await activity.run(job_result.rows[0].activity_input)
                     console.log("activity_result")
                     console.log(activity_result)
@@ -89,129 +89,12 @@ async function check_jobs() {
                     `
                     let failed_json_schema_query = await client.query(json_schema_failed_query, [job_result.rows[0].activity_id])
                     console.log(`activity_id: ${job_result.rows[0].activity_id} failed due to invalid JSONSchema`)
+                    return
                 }
-                try {
-                    // Log events to database
-                    await client.query('BEGIN')
-                    for (const event of activity_result) {
-                        await client.query(`
-                            INSERT INTO nostr_events (
-                                event_id,
-                                created_at,
-                                kind,
-                                pubkey,
-                                sig,
-                                content,
-                                raw_event,
-                                is_verified
-                            ) VALUES (
-                                $1,
-                                $2,
-                                $3,
-                                $4,
-                                $5,
-                                $6,
-                                $7,
-                                $8
-                            ) ON CONFLICT (event_id) DO NOTHING`,
-                            [
-                                event.id,
-                                event.created_at,
-                                event.kind,
-                                event.pubkey,
-                                event.sig,
-                                event.content,
-                                JSON.stringify(event),
-                                await verifyEvent(event)
-                            ]
-                        )
-                        await client.query(`
-                            INSERT INTO nostr_event_on_relay (
-                                event_id,
-                                relay_url
-                            ) VALUES (
-                                $1,
-                                $2
-                            )`,
-                            [
-                                event.id,
-                                job_result.rows[0].activity_input.relays[0]
-                            ])
-                        // Log and update the job
-                        await client.query(`
-                INSERT INTO nostr_scraping_logs (
-                    activity_id,
-                    activity_name,
-                    activity_input,
-                    activity_output,
-                    activity_previous_status,
-                    activity_updated_status
-                ) VALUES (
-                    $1,
-                    $2,
-                    $3,
-                    $4,
-                    $5,
-                    $6
-                );
-                `, [
-                            job_result.rows[0].activity_id,
-                            job_result.rows[0].activity_name,
-                            job_result.rows[0].activity_input,
-                            JSON.stringify(activity_result),
-                            job_result.rows[0].activity_status,
-                            "compelted",
-                        ])
-                        await client.query(`
-                    UPDATE nostr_scraping_jobs
-                    SET
-                        activity_status = 'COMPLETED'
-                    WHERE activity_id = ($1)
-                    RETURNING *;
-                    `, [job_result.rows[0].activity_id])
-                        await client.query('COMMIT')
-                    }
-                } catch (error) {
-                    console.log(error)
-                    await client.query('ROLLBACK')
-                    await client.query(`
-                    UPDATE nostr_scraping_jobs
-                    SET
-                        activity_status = 'ERROR'
-                    WHERE activity_id = ($1)
-                    RETURNING *;
-                    `, [job_result.rows[0].activity_id])
-                    await client.query(`
-                        INSERT INTO nostr_scraping_logs (
-                            activity_id,
-                            activity_name,
-                            activity_input,
-                            activity_output,
-                            activity_previous_status,
-                            activity_updated_status
-                        ) VALUES (
-                            $1,
-                            $2,
-                            $3,
-                            $4,
-                            $5,
-                            $6
-                        );
-                        `, [
-                        job_result.rows[0].activity_id,
-                        job_result.rows[0].activity_name,
-                        job_result.rows[0].activity_input,
-                        JSON.stringify({
-                            "error": "",
-                            "error_description": "Error inserting nostr event data into db",
-                            "raw_error": JSON.stringify(error)
-                        }),
-                        job_result.rows[0].activity_status,
-                        "compelted",
-                    ])
-                }
-                // Log the relay the events were retrieved from in database
-                // Scape more events if the number of returned events is the same as the limit input
+                // STEP data_ingestion
+                await activity.data_ingestion(client, job_result.rows[0].activity_input, activity_result)
+                // STEP activity_loop
+                await activity.activity_loop(client, job_result.rows[0].activity_input, activity_result)
             }
         }
     }

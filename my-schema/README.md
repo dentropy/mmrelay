@@ -19,6 +19,17 @@ psql $PG_CONN_STRING -f ./database/delete.sql
 ``` 
 
 
+``` SQL
+
+select * from nostr_event_on_relay;
+select * from nostr_events where kind = 1;
+select * from simple_nostr_scraping_logs order by created_at desc;
+select * from non_standard_nostr_event_tags nsnet ;
+select * from nostr_event_tags;
+
+```
+
+
 #### Job Queue Querries
 
 ``` sql

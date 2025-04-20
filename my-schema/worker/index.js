@@ -35,7 +35,14 @@ if ("now" in result.rows[0]) {
 }
 
 
-async function filter_limit_loop(filter, relay_url, size, optional_timestamp){
+async function filter_limit_loop(filter, relay_url, size, optional_timestamp, is_origional_loop){
+    if(is_origional_loop == undefined) {
+        await client.query(`
+            INSERT INTO simple_nostr_scraping_logs
+            ( log_title, log_status, filter_json, relay_url ) VALUES
+            ( $1, $2, $3, $4)
+        `, ["filter_limit_loop", "FILTER START", filter, relay_url])
+    }
     // GET_EVENTS
     filter.limit = size
     if(optional_timestamp != undefined) {
@@ -182,13 +189,18 @@ async function filter_limit_loop(filter, relay_url, size, optional_timestamp){
             optional_timestamp = optional_timestamp - 1
         }
         console.log(filter)
-        filter_limit_loop(filter, relay_url, size, optional_timestamp)
+        filter_limit_loop(filter, relay_url, size, optional_timestamp, true)
     } else {
         console.log("filter_limit_loop completed")
+        await client.query(`
+            INSERT INTO simple_nostr_scraping_logs
+            ( log_title, log_status, filter_json, relay_url ) VALUES
+            ( $1, $2, $3, $4)
+        `, ["filter_limit_loop", "FILTER START", filter, relay_url])
         process.exit()
     }
 }
 
-// filter_limit_loop(kind_0_filter, "wss://relay.mememaps.net", 1000)
+// filter_limit_loop({"kinds": [0]}, "wss://relay.mememaps.net", 100)
 // filter_limit_loop({"kinds": [1]}, "wss://relay.mememaps.net", 100)
-filter_limit_loop({"kinds": [1]}, "wss://relay.damus.io/", 500)
+filter_limit_loop({"kinds": [0]}, "wss://relay.damus.io/", 100)

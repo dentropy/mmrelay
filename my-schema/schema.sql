@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS simple_nostr_scraping_logs (
     filter_json JSONB,
     relay_url VARCHAR,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)
+);
 
 -- CREATE TABLE IF NOT EXISTS nostr_scraping_jobs (
 --     activity_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

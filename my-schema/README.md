@@ -1,5 +1,9 @@
 ``` bash
 
+cd my-schema
+cd database
+docker compose up -d
+
 docker-compose down --volumes
 
 ```

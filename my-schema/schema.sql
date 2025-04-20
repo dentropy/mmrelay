@@ -63,6 +63,60 @@ CREATE TABLE IF NOT EXISTS simple_nostr_scraping_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE OR REPLACE FUNCTION insert_nostr_event_tags()
+RETURNS TRIGGER AS $$
+DECLARE
+    nested_tags JSONB;
+    item JSONB;
+    first_tag_extracted VARCHAR;
+BEGIN
+    RAISE LOG 'Seems like the thing is running';
+    -- Loop through the JSONB array 'tags' from the NEW record
+    FOR item IN
+        SELECT jsonb_array_elements(NEW.raw_event::jsonb->'tags') AS tag
+    LOOP
+        -- Check if the tag matches the pattern
+        first_tag_extracted := item::jsonb->>0;
+        RAISE NOTICE 'Item looks like %', item;
+        RAISE NOTICE 'Item 0 looks like %', item::jsonb->0;
+        RAISE NOTICE 'event_id looks like %', NEW.event_id;
+        RAISE NOTICE 'first_tag looks like %', first_tag_extracted;
+        IF first_tag_extracted ~ '^[A-Za-z]{1,2}$' THEN
+            -- Insert into nostr_event_tags
+            RAISE NOTICE 'IT_WAS_TRUE';
+            INSERT INTO nostr_event_tags (
+                event_id,
+                first_tag,
+                tags
+            ) VALUES (
+                NEW.event_id,
+                first_tag_extracted,  -- Insert the tag directly
+                item::jsonb
+            ) ON CONFLICT (event_id, first_tag, tags) DO NOTHING;
+        ELSE
+            -- Insert into non_standard_nostr_event_tags
+            RAISE NOTICE 'IT_WAS_FALSE';
+            INSERT INTO non_standard_nostr_event_tags (
+                event_id,
+                first_tag,
+                tags
+            ) VALUES (
+                NEW.event_id,
+                first_tag_extracted,  -- Insert the tag directly
+                item
+            ) ON CONFLICT (event_id, first_tag, tags) DO NOTHING;
+        END IF;
+    END LOOP;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE TRIGGER run_insert_nostr_event_tags
+AFTER INSERT ON nostr_events
+FOR EACH ROW
+EXECUTE PROCEDURE insert_nostr_event_tags();
 -- CREATE TABLE IF NOT EXISTS nostr_scraping_jobs (
 --     activity_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 --     activity_name VARCHAR NOT NULL,

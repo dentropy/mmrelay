@@ -170,7 +170,7 @@ async function filter_limit_loop(filter, relay_url, size, optional_timestamp, is
                         event.id,
                         relay_url
                     ])
-                const indexed_tag_regex = /^[A-Za-z]{2}/;
+                const indexed_tag_regex = /^[A-Za-z]{1,2}/;
                 for (const tag of event.tags){
                     if(indexed_tag_regex.test(tag[0])){
                         await client.query(`

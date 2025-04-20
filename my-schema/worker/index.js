@@ -1,7 +1,6 @@
-import { config } from 'dotenv';
 import { nostrGet } from './lib/nostrGet.js';
 import { verifyEvent } from 'nostr-tools';
-import pg from 'pg'
+
 
 // Start with a Relay
 // https://raw.githubusercontent.com/bordalix/nostr-broadcast/refs/heads/master/js/relays.js
@@ -52,6 +51,8 @@ const relays = [
   ]
 
 // Hook up to Postgres
+import { config } from 'dotenv';
+import pg from 'pg'
 const { Pool, Client } = pg
 config()
 if (!process.env.PG_CONN_STRING) {
@@ -240,10 +241,20 @@ async function filter_limit_loop(filter, relay_url, size, optional_timestamp, is
 
 // filter_limit_loop({"kinds": [0]}, "wss://relay.mememaps.net", 100)
 // filter_limit_loop({"kinds": [1]}, "wss://relay.mememaps.net", 100)
-filter_limit_loop({"kinds": [0], "until": 1744971551 }, "wss://relay.damus.io/", 100)
+// filter_limit_loop({"kinds": [0], "until": 1744971551 }, "wss://relay.damus.io/", 100)
 // filter_limit_loop({"kinds": [0]}, "wss://relay.damus.io/", 100)
 
-for (const relay of relays){
-    console.log(relay)
-    await filter_limit_loop({"kinds": [0] }, relay, 100)
+
+// // Get all event kind 0
+// for (const relay of relays){
+//     console.log(relay)
+//     await filter_limit_loop({"kinds": [0] }, relay, 100)
+// }
+
+const pubkeys = await client.query(`
+    select distinct pubkey from nostr_events;
+`)
+for (const pubkey of pubkeys.rows){
+    console.log(pubkey)
+    await filter_limit_loop({"authors": [pubkey["pubkey"]] }, relays[0], 100)
 }

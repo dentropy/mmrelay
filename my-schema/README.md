@@ -111,3 +111,24 @@ INSERT INTO nostr_scraping_jobs (
 );
 
 select * from nostr_scraping_jobs;
+```
+
+## Queries
+
+``` sql
+
+SELECT DISTINCT data->>'pubkey'
+FROM nostr_events
+WHERE data ? 'pubkey';
+
+select distinct pubkey from nostr_events;
+
+select count(distinct pubkey) from nostr_events;
+
+```
+
+#### Nosdump
+
+``` bash
+
+```

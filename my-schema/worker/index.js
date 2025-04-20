@@ -45,9 +45,11 @@ async function filter_limit_loop(filter, relay_url, size, optional_timestamp, is
     }
     // GET_EVENTS
     filter.limit = size
-    if(optional_timestamp != undefined) {
+    if(optional_timestamp != undefined && filter.until != undefined) {
         filter.until = optional_timestamp
     }
+    console.log("Inital Filter")
+    console.log(filter)
     let nostrGet_results
     await client.query(`
         INSERT INTO simple_nostr_scraping_logs
@@ -77,88 +79,101 @@ async function filter_limit_loop(filter, relay_url, size, optional_timestamp, is
         ( $1, $2, $3, $4)
     `, ["filter_limit_loop", "INSERTING_EVENTS START", filter, relay_url])
     try {
-        await client.query('BEGIN')
-        for (const event of nostrGet_results) {
+        if (nostrGet_results.length == 0) {
             await client.query(`
-                        INSERT INTO nostr_events (
-                            event_id,
-                            created_at,
-                            kind,
-                            pubkey,
-                            sig,
-                            content,
-                            raw_event,
-                            is_verified
-                        ) VALUES (
-                            $1,
-                            $2,
-                            $3,
-                            $4,
-                            $5,
-                            $6,
-                            $7,
-                            $8
-                        ) ON CONFLICT (event_id) DO NOTHING`,
-                [
-                    event.id,
-                    event.created_at,
-                    event.kind,
-                    event.pubkey,
-                    event.sig,
-                    event.content,
-                    JSON.stringify(event),
-                    await verifyEvent(event)
-                ]
-            )
-            await client.query(`
-                        INSERT INTO nostr_event_on_relay (
-                            event_id,
-                            relay_url
-                        ) VALUES (
-                            $1,
-                            $2
-                        )`,
-                [
-                    event.id,
-                    relay_url
-                ])
-            const indexed_tag_regex = /^[A-Za-z]{2}/;
-            for (const tag of event.tags){
-                if(indexed_tag_regex.test(tag[0])){
-                    await client.query(`
-                        INSERT INTO nostr_event_tags (
-                            event_id,
-                            first_tag,
-                            tags
-                        ) VALUES (
-                            $1,
-                            $2,
-                            $3
-                        ) ON CONFLICT (event_id, first_tag, tags) DO NOTHING`,
-                [
-                    event.id,
-                    tag[0],
-                    JSON.stringify(tag)
-                ])
-                } else {
-                    await client.query(`
-                        INSERT INTO non_standard_nostr_event_tags (
-                            event_id,
-                            first_tag,
-                            tags
-                        ) VALUES (
-                            $1,
-                            $2,
-                            $3
-                        ) ON CONFLICT (event_id, first_tag, tags) DO NOTHING`,
-                [
-                    event.id,
-                    tag[0],
-                    JSON.stringify(tag)
-                ])
+                INSERT INTO simple_nostr_scraping_logs
+                ( log_title, log_status, filter_json, relay_url, log_description ) VALUES
+                ( $1, $2, $3, $4, $5)
+            `, ["filter_limit_loop", "INSERTING_EVENTS SUCCESS", filter, relay_url, "Got Zero Results"])
+        } else {
+            await client.query('BEGIN')
+            for (const event of nostrGet_results) {
+                await client.query(`
+                            INSERT INTO nostr_events (
+                                event_id,
+                                created_at,
+                                kind,
+                                pubkey,
+                                sig,
+                                content,
+                                raw_event,
+                                is_verified
+                            ) VALUES (
+                                $1,
+                                $2,
+                                $3,
+                                $4,
+                                $5,
+                                $6,
+                                $7,
+                                $8
+                            ) ON CONFLICT (event_id) DO NOTHING`,
+                    [
+                        event.id,
+                        event.created_at,
+                        event.kind,
+                        event.pubkey,
+                        event.sig,
+                        event.content,
+                        JSON.stringify(event),
+                        await verifyEvent(event)
+                    ]
+                )
+                await client.query(`
+                            INSERT INTO nostr_event_on_relay (
+                                event_id,
+                                relay_url
+                            ) VALUES (
+                                $1,
+                                $2
+                            )`,
+                    [
+                        event.id,
+                        relay_url
+                    ])
+                const indexed_tag_regex = /^[A-Za-z]{2}/;
+                for (const tag of event.tags){
+                    if(indexed_tag_regex.test(tag[0])){
+                        await client.query(`
+                            INSERT INTO nostr_event_tags (
+                                event_id,
+                                first_tag,
+                                tags
+                            ) VALUES (
+                                $1,
+                                $2,
+                                $3
+                            ) ON CONFLICT (event_id, first_tag, tags) DO NOTHING`,
+                    [
+                        event.id,
+                        tag[0],
+                        JSON.stringify(tag)
+                    ])
+                    } else {
+                        await client.query(`
+                            INSERT INTO non_standard_nostr_event_tags (
+                                event_id,
+                                first_tag,
+                                tags
+                            ) VALUES (
+                                $1,
+                                $2,
+                                $3
+                            ) ON CONFLICT (event_id, first_tag, tags) DO NOTHING`,
+                    [
+                        event.id,
+                        tag[0],
+                        JSON.stringify(tag)
+                    ])
+                    }
                 }
-            }
-            await client.query('COMMIT')
+                await client.query('COMMIT')
+                await client.query(`
+                    INSERT INTO simple_nostr_scraping_logs
+                    ( log_title, log_status, filter_json, relay_url, log_description ) VALUES
+                    ( $1, $2, $3, $4, $5)
+                `, ["filter_limit_loop", "INSERTING_EVENTS SUCCESS", filter, relay_url, nostrGet_results])
+        }
         }
     } catch (error) {
         console.log(error)
@@ -169,25 +184,10 @@ async function filter_limit_loop(filter, relay_url, size, optional_timestamp, is
             ( $1, $2, $3, $4, $5)
         `, ["filter_limit_loop", "GET_EVENTS ERROR", JSON.stringify(error), filter, relay_url])
     }
-    await client.query(`
-        INSERT INTO simple_nostr_scraping_logs
-        ( log_title, log_status, filter_json, relay_url ) VALUES
-        ( $1, $2, $3, $4)
-    `, ["filter_limit_loop", "INSERTING_EVENTS SUCCESS", filter, relay_url])
-
-    // Recursion when Nessesary
-    // console.log(nostrGet_results)
     if(nostrGet_results.length == size){
-        // Get the smallest timestamp
-        //console.log(nostrGet_results[0])
-        console.log(optional_timestamp)
-        if(optional_timestamp == undefined){
-            filter.until = Math.min(...nostrGet_results.map(obj => obj.created_at))
-            optional_timestamp = filter.until
-        } else {
-            filter.until = optional_timestamp - 1
-            optional_timestamp = optional_timestamp - 1
-        }
+        filter.until = Math.min(...nostrGet_results.map(obj => obj.created_at))
+        optional_timestamp = filter.until
+        console.log("Next Filter")
         console.log(filter)
         filter_limit_loop(filter, relay_url, size, optional_timestamp, true)
     } else {
@@ -203,4 +203,5 @@ async function filter_limit_loop(filter, relay_url, size, optional_timestamp, is
 
 // filter_limit_loop({"kinds": [0]}, "wss://relay.mememaps.net", 100)
 // filter_limit_loop({"kinds": [1]}, "wss://relay.mememaps.net", 100)
-filter_limit_loop({"kinds": [0]}, "wss://relay.damus.io/", 100)
+filter_limit_loop({"kinds": [0], "until": 1744971551 }, "wss://relay.damus.io/", 100)
+// filter_limit_loop({"kinds": [0]}, "wss://relay.damus.io/", 100)

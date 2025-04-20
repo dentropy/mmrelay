@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS simple_nostr_scraping_logs (
     log_status VARCHAR,
     log_description TEXT,
     filter_json JSONB,
+    log_data TEXT,
     relay_url VARCHAR,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

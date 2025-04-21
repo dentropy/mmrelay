@@ -10,8 +10,20 @@ CREATE TABLE IF NOT EXISTS nostr_events (
 );
 
 CREATE TABLE IF NOT EXISTS raw_nostr_events (
-    nostr_event JSONB UNIQUE
-)
+    raw_event JSONB UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS normalized_nostr_events (
+    id VARCHAR NOT NULL UNIQUE,
+    created_at INTEGER NOT NULL,
+    kind integer NOT NULL,
+    pubkey VARCHAR,
+    sig VARCHAR,
+    content VARCHAR,
+    tags JSONB
+    -- tags JSONB
+);
+
 
 -- content_sha256 VARCHAR,
 -- content_is_json BOOLEAN,

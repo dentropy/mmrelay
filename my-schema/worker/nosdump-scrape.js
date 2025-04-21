@@ -22,7 +22,7 @@ async function nosdump_scrape(relay, filter, output_path) {
     const cidv1 = CID.create(1, code, hash)
     let metadata_filepath = `${output_path}/metadata-${cidv1}.json`
     if(!fs.existsSync(metadata_filepath)){
-        await fs.writeFileSync(JSON.stringify(output_struct));
+        await fs.writeFileSync(metadata_filepath, JSON.stringify(output_struct));
         const command = 'echo \'' + JSON.stringify(filter) + `' | nosdump ${relay} > ${output_path}/${cidv1}.jsonl`
         console.log(command)
         spawn(command, { shell: true })

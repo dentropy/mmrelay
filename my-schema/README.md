@@ -20,6 +20,14 @@ psql $PG_CONN_STRING -f ./schema.sql
 export PG_CONN_STRING="postgres://postgres:postgres@localhost:5433/postgres"
 psql $PG_CONN_STRING -f ./database/delete.sql
 
+
+export PG_CONN_STRING="postgres://postgres:postgres@127.0.0.1:5433/postgres"
+export PGHOST=127.0.0.1
+export PGPORT=5433
+export PGDATABASE=postgres
+export PGUSERNAME=postgres
+export PGPASSWORD=postgres
+
 ``` 
 
 

@@ -9,6 +9,10 @@ CREATE TABLE IF NOT EXISTS nostr_events (
     is_verified BOOLEAN
 );
 
+CREATE TABLE IF NOT EXISTS raw_nostr_events (
+    nostr_event JSONB UNIQUE
+)
+
 -- content_sha256 VARCHAR,
 -- content_is_json BOOLEAN,
 -- content_json JSONB,
@@ -70,20 +74,14 @@ DECLARE
     item JSONB;
     first_tag_extracted VARCHAR;
 BEGIN
-    RAISE LOG 'Seems like the thing is running';
     -- Loop through the JSONB array 'tags' from the NEW record
     FOR item IN
         SELECT jsonb_array_elements(NEW.raw_event::jsonb->'tags') AS tag
     LOOP
         -- Check if the tag matches the pattern
         first_tag_extracted := item::jsonb->>0;
-        RAISE NOTICE 'Item looks like %', item;
-        RAISE NOTICE 'Item 0 looks like %', item::jsonb->0;
-        RAISE NOTICE 'event_id looks like %', NEW.event_id;
-        RAISE NOTICE 'first_tag looks like %', first_tag_extracted;
         IF first_tag_extracted ~ '^[A-Za-z]{1,2}$' THEN
             -- Insert into nostr_event_tags
-            RAISE NOTICE 'IT_WAS_TRUE';
             INSERT INTO nostr_event_tags (
                 event_id,
                 first_tag,
@@ -95,7 +93,6 @@ BEGIN
             ) ON CONFLICT (event_id, first_tag, tags) DO NOTHING;
         ELSE
             -- Insert into non_standard_nostr_event_tags
-            RAISE NOTICE 'IT_WAS_FALSE';
             INSERT INTO non_standard_nostr_event_tags (
                 event_id,
                 first_tag,

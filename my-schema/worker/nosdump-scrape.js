@@ -21,14 +21,19 @@ async function nosdump_scrape(relay, filter, output_path) {
     const hash = await sha256.digest(encoded)
     const cidv1 = CID.create(1, code, hash)
     let metadata_filepath = `${output_path}/metadata-${cidv1}.json`
+    console.log("metadata_filepath")
+    console.log(metadata_filepath)
     if(!fs.existsSync(metadata_filepath)){
         await fs.writeFileSync(metadata_filepath, JSON.stringify(output_struct));
         const command = 'echo \'' + JSON.stringify(filter) + `' | nosdump ${relay} > ${output_path}/${cidv1}.jsonl`
         console.log(command)
-        spawn(command, { shell: true })
+        const scraping_process = spawn(command, { shell: true })
+        scraping_process.on('close', (code) => {
+            console.log(`child process exited with code ${code}`);
+        });
     } else {
         console.log("filter already scraped")
     }
 }
 
-nosdump_scrape("wss://relay.mememaps.net", { kinds: [1] }, "./ScrapedData")
+nosdump_scrape("wss://relay.mememaps.net", { kinds: [4] }, "./ScrapedData")

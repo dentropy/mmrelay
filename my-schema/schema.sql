@@ -1,62 +1,96 @@
-CREATE TABLE IF NOT EXISTS nostr_events (
-    event_id VARCHAR NOT NULL UNIQUE,
-    created_at INTEGER NOT NULL,
-    kind integer NOT NULL,
-    pubkey VARCHAR,
-    sig VARCHAR,
-    content VARCHAR,
-    raw_event VARCHAR NOT NULL,
-    is_verified BOOLEAN
-);
-
-CREATE TABLE IF NOT EXISTS raw_nostr_events (
-    raw_event JSONB UNIQUE
-);
-
 CREATE TABLE IF NOT EXISTS normalized_nostr_events (
     id VARCHAR NOT NULL UNIQUE,
     created_at INTEGER NOT NULL,
     kind integer NOT NULL,
-    pubkey VARCHAR,
+    pubkey VARCHAR NOT NULL,
     sig VARCHAR,
     content VARCHAR,
-    tags JSONB
-    -- tags JSONB
+    tags VARCHAR,
+    raw_event VARCHAR,
+    is_verified BOOLEAN
 );
 
-
--- content_sha256 VARCHAR,
--- content_is_json BOOLEAN,
--- content_json JSONB,
-
 CREATE TABLE IF NOT EXISTS nostr_event_on_relay (
-    event_id VARCHAR,
+    id VARCHAR,
     relay_url VARCHAR,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_nostr_event_relay_metadata
-        FOREIGN KEY (event_id)
-        REFERENCES nostr_events (event_id)
+        FOREIGN KEY (id)
+        REFERENCES normalized_nostr_events (id)
 );
 
 CREATE TABLE IF NOT EXISTS nostr_event_tags (
-    event_id VARCHAR,
+    id VARCHAR,
     first_tag VARCHAR,
     tags JSONB,
     CONSTRAINT fk_nostr_event_relay_metadata
-        FOREIGN KEY (event_id)
-        REFERENCES nostr_events (event_id),
-    CONSTRAINT unique_nostr_event_tags UNIQUE (event_id, first_tag, tags)
+        FOREIGN KEY (id)
+        REFERENCES normalized_nostr_events (id)
+        ON DELETE CASCADE,
+    CONSTRAINT unique_nostr_event_tags UNIQUE (id, first_tag, tags)
 );
 
 CREATE TABLE IF NOT EXISTS non_standard_nostr_event_tags (
-    event_id VARCHAR,
+    id VARCHAR,
     first_tag VARCHAR,
     tags JSONB,
     CONSTRAINT fk_non_standard_nostr_event_tags
-        FOREIGN KEY (event_id)
-        REFERENCES nostr_events (event_id),
-    CONSTRAINT unique_non_standard_nostr_event_tags UNIQUE (event_id, first_tag, tags)
+        FOREIGN KEY (id)
+        REFERENCES normalized_nostr_events (id)
+        ON DELETE CASCADE,
+    CONSTRAINT unique_non_standard_nostr_event_tags UNIQUE (id, first_tag, tags)
 );
+
+CREATE OR REPLACE FUNCTION insert_nostr_event_tags()
+RETURNS TRIGGER AS $$
+DECLARE
+    nested_tags JSONB;
+    item JSONB;
+    first_tag_extracted VARCHAR;
+BEGIN
+    -- Loop through the JSONB array 'tags' from the NEW record
+    FOR item IN
+        SELECT jsonb_array_elements(NEW.raw_event::jsonb->'tags') AS tag
+    LOOP
+        -- Check if the tag matches the pattern
+        first_tag_extracted := item::jsonb->>0;
+        IF first_tag_extracted ~ '^[A-Za-z]{1,2}$' THEN
+            -- Insert into nostr_event_tags
+            INSERT INTO nostr_event_tags (
+                id,
+                first_tag,
+                tags
+            ) VALUES (
+                NEW.id,
+                first_tag_extracted,  -- Insert the tag directly
+                item::jsonb
+            ) ON CONFLICT (id, first_tag, tags) DO NOTHING;
+        ELSE
+            -- Insert into non_standard_nostr_event_tags
+            INSERT INTO non_standard_nostr_event_tags (
+                id,
+                first_tag,
+                tags
+            ) VALUES (
+                NEW.id,
+                first_tag_extracted,  -- Insert the tag directly
+                item
+            ) ON CONFLICT (id, first_tag, tags) DO NOTHING;
+        END IF;
+    END LOOP;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER run_insert_nostr_event_tags_on_normalized_nostr_events
+AFTER INSERT ON normalized_nostr_events
+FOR EACH ROW
+EXECUTE PROCEDURE insert_nostr_event_tags();
+
+
+
+
 
 CREATE TABLE IF NOT EXISTS nip05_metadata (
     pubkey VARCHAR,
@@ -79,53 +113,37 @@ CREATE TABLE IF NOT EXISTS simple_nostr_scraping_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE OR REPLACE FUNCTION insert_nostr_event_tags()
-RETURNS TRIGGER AS $$
-DECLARE
-    nested_tags JSONB;
-    item JSONB;
-    first_tag_extracted VARCHAR;
-BEGIN
-    -- Loop through the JSONB array 'tags' from the NEW record
-    FOR item IN
-        SELECT jsonb_array_elements(NEW.raw_event::jsonb->'tags') AS tag
-    LOOP
-        -- Check if the tag matches the pattern
-        first_tag_extracted := item::jsonb->>0;
-        IF first_tag_extracted ~ '^[A-Za-z]{1,2}$' THEN
-            -- Insert into nostr_event_tags
-            INSERT INTO nostr_event_tags (
-                event_id,
-                first_tag,
-                tags
-            ) VALUES (
-                NEW.event_id,
-                first_tag_extracted,  -- Insert the tag directly
-                item::jsonb
-            ) ON CONFLICT (event_id, first_tag, tags) DO NOTHING;
-        ELSE
-            -- Insert into non_standard_nostr_event_tags
-            INSERT INTO non_standard_nostr_event_tags (
-                event_id,
-                first_tag,
-                tags
-            ) VALUES (
-                NEW.event_id,
-                first_tag_extracted,  -- Insert the tag directly
-                item
-            ) ON CONFLICT (event_id, first_tag, tags) DO NOTHING;
-        END IF;
-    END LOOP;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
 
 
-CREATE TRIGGER run_insert_nostr_event_tags
-AFTER INSERT ON nostr_events
-FOR EACH ROW
-EXECUTE PROCEDURE insert_nostr_event_tags();
+-- CREATE TABLE IF NOT EXISTS nostr_events (
+--     event_id VARCHAR NOT NULL UNIQUE,
+--     created_at INTEGER NOT NULL,
+--     kind integer NOT NULL,
+--     pubkey VARCHAR,
+--     sig VARCHAR,
+--     content VARCHAR,
+--     raw_event VARCHAR NOT NULL,
+--     is_verified BOOLEAN
+-- );
+
+-- CREATE TABLE IF NOT EXISTS raw_nostr_events (
+--     raw_event JSONB UNIQUE
+-- );
+
+
+
+
+-- CREATE TRIGGER run_insert_nostr_event_tags
+-- AFTER INSERT ON nostr_events
+-- FOR EACH ROW
+-- EXECUTE PROCEDURE insert_nostr_event_tags();
+
+
+-- content_sha256 VARCHAR,
+-- content_is_json BOOLEAN,
+-- content_json JSONB,
+
+
 -- CREATE TABLE IF NOT EXISTS nostr_scraping_jobs (
 --     activity_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 --     activity_name VARCHAR NOT NULL,

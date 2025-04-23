@@ -45,7 +45,7 @@ async function count_line_num(file_name) {
 // // console.log(line_count_test)
 
 // https://stackoverflow.com/questions/16010915/parsing-huge-logfiles-in-node-js-read-in-line-by-line
-async function load_lines(file_name, line_start, line_end) {
+async function load_lines(file_name, line_start, line_end, verify_events=true) {
     return new Promise((resolve, reject) => {
         const instream = fs.createReadStream(file_name);
         let count = 0;
@@ -59,8 +59,17 @@ async function load_lines(file_name, line_start, line_end) {
 
         rl.on("line", (line) => {
             if (count > line_start && count < line_end) {
-                lines.push(line);
-                // console.log(line);
+                if( verify_events == true) {
+                    let new_line = JSON.parse(line)
+                    new_line.is_verified = verifyEvent(new_line)
+                    new_line.raw_event = line
+                    lines.push(new_line);
+                } else {
+                    let new_line = JSON.parse(line)
+                    new_line.is_verified = false
+                    new_line.raw_event = line
+                    lines.push(new_line);
+                }
             }
             count += 1;
         });
@@ -93,85 +102,17 @@ const line_count = await count_line_num(jsonnl_filename);
 console.log("count_line_num(jsonnl_filename)")
 console.log(line_count);
 for (let count = 0; count < line_count; count += 10000) {
+    console.log("About to load lines")
     const loaded_lines = await load_lines(
         jsonnl_filename,
         count,
         count + 10000,
-    );
-    let parsed_json = [];
-    for (const line of loaded_lines) {
-        try {
-            parsed_json.push(JSON.parse(line));
-        } catch (error) {
-            console.log("Error parsing JSON in JSONNL File");
-            console.log(error);
-        }
-    }
-    console.log("parsed_json.length")
-    console.log(parsed_json.length)
-    // for (const event of parsed_json) {
-    //     console.log("IN_LOOP")
-    //     await client.query(`
-    //                         INSERT INTO nostr_events (
-    //                             event_id,
-    //                             created_at,
-    //                             kind,
-    //                             pubkey,
-    //                             sig,
-    //                             content,
-    //                             raw_event,
-    //                             is_verified
-    //                         ) VALUES (
-    //                             $1,
-    //                             $2,
-    //                             $3,
-    //                             $4,
-    //                             $5,
-    //                             $6,
-    //                             $7,
-    //                             $8
-    //                         ) ON CONFLICT (event_id) DO NOTHING`,
-    //         [
-    //             event.id,
-    //             event.created_at,
-    //             event.kind,
-    //             event.pubkey,
-    //             event.sig,
-    //             event.content,
-    //             JSON.stringify(event),
-    //             await verifyEvent(event)
-    //         ]
-    //     )
-    //     await client.query(`
-    //                         INSERT INTO nostr_event_on_relay (
-    //                             event_id,
-    //                             relay_url
-    //                         ) VALUES (
-    //                             $1,
-    //                             $2
-    //                         )`,
-    //         [
-    //             event.id,
-    //             relay_url
-    //         ])
-    //     console.log("Done Ingesting Some Data")
-    // }
-    // await sql`INSERT INTO nostr_events (
-    //                             raw_event
-    //                         ) VALUES (
-    //                             ${sql(parsed_json)}
-    //                         ) ON CONFLICT (event_id) DO NOTHING`;
-    console.log(parsed_json[0])
-    console.log(parsed_json[parsed_json.length - 1])
-    for(const id of parsed_json) {
-        if (id.id == null) {
-            console.log("FUCK ME")
-            console.log(id)
-        }
-    }
-    await sql`insert into normalized_nostr_events ${ sql(parsed_json) }`
+        false
+    )
+    console.log("Loaded Lines")
+    console.log("About to Insert")
+    await sql`insert into normalized_nostr_events ${ sql(loaded_lines) } ON CONFLICT DO NOTHING;`
+    console.log("Done")
 }
-
-// // Loop through the lines counted
-
-// // Load the events into postgres
+await sql.end()
+process.exit()

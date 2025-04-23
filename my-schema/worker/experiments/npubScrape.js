@@ -1,7 +1,7 @@
 import { config } from 'dotenv';
 import pg from 'pg'
 import Ajv from "ajv";
-import { scrape_pubkey_from_specific_relay_root } from "./activities/scrape_nostr_filter_pagiated_workflow.js"
+import { scrape_pubkey_from_specific_relay_root } from "../activities/scrape_nostr_filter_pagiated_workflow.js"
 import { validateEvent, verifyEvent } from 'nostr-tools';
 // Connection to Postgres Database
 const { Pool, Client } = pg

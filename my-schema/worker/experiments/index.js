@@ -1,4 +1,4 @@
-import { nostrGet } from './lib/nostrGet.js';
+import { nostrGet } from '../lib/nostrGet.js';
 import { verifyEvent } from 'nostr-tools';
 
 

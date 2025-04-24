@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS normalized_nostr_events (
+CREATE TABLE IF NOT EXISTS normalized_nostr_events_t (
     id VARCHAR NOT NULL UNIQUE,
     created_at INTEGER NOT NULL,
     kind integer NOT NULL,
@@ -10,33 +10,25 @@ CREATE TABLE IF NOT EXISTS normalized_nostr_events (
     is_verified BOOLEAN
 );
 
-CREATE TABLE IF NOT EXISTS nostr_event_on_relay (
-    id VARCHAR,
-    relay_url VARCHAR,
-    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_nostr_event_relay_metadata
-        FOREIGN KEY (id)
-        REFERENCES normalized_nostr_events (id)
-);
-
-CREATE TABLE IF NOT EXISTS nostr_event_tags (
+CREATE TABLE IF NOT EXISTS nostr_event_tags_t (
     id VARCHAR,
     first_tag VARCHAR,
     tags JSONB,
     CONSTRAINT fk_nostr_event_relay_metadata
         FOREIGN KEY (id)
-        REFERENCES normalized_nostr_events (id)
+        REFERENCES normalized_nostr_events_t (id)
         ON DELETE CASCADE,
     CONSTRAINT unique_nostr_event_tags UNIQUE (id, first_tag, tags)
 );
 
-CREATE TABLE IF NOT EXISTS non_standard_nostr_event_tags (
+CREATE TABLE IF NOT EXISTS non_standard_nostr_event_tags_t (
     id VARCHAR,
     first_tag VARCHAR,
+    tags_hashed VARCHAR,
     tags JSONB,
     CONSTRAINT fk_non_standard_nostr_event_tags
         FOREIGN KEY (id)
-        REFERENCES normalized_nostr_events (id)
+        REFERENCES normalized_nostr_events_t (id)
         ON DELETE CASCADE,
     CONSTRAINT unique_non_standard_nostr_event_tags UNIQUE (id, first_tag, tags)
 );
@@ -56,7 +48,7 @@ BEGIN
         first_tag_extracted := item::jsonb->>0;
         IF first_tag_extracted ~ '^[A-Za-z]{1,2}$' THEN
             -- Insert into nostr_event_tags
-            INSERT INTO nostr_event_tags (
+            INSERT INTO nostr_event_tags_t (
                 id,
                 first_tag,
                 tags
@@ -67,15 +59,17 @@ BEGIN
             ) ON CONFLICT (id, first_tag, tags) DO NOTHING;
         ELSE
             -- Insert into non_standard_nostr_event_tags
-            INSERT INTO non_standard_nostr_event_tags (
+            INSERT INTO non_standard_nostr_event_tags_t (
                 id,
                 first_tag,
+                tags_hashed,
                 tags
             ) VALUES (
                 NEW.id,
                 first_tag_extracted,  -- Insert the tag directly
+                md5(item),
                 item
-            ) ON CONFLICT (id, first_tag, tags) DO NOTHING;
+            ) ON CONFLICT (id, first_tag, tags_hashed) DO NOTHING;
         END IF;
     END LOOP;
 
@@ -84,15 +78,52 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER run_insert_nostr_event_tags_on_normalized_nostr_events
-AFTER INSERT ON normalized_nostr_events
+AFTER INSERT ON normalized_nostr_events_t
 FOR EACH ROW
 EXECUTE PROCEDURE insert_nostr_event_tags();
 
+-- Logging and Scraping Management
+CREATE TABLE IF NOT EXISTS scraping_nostr_filters_t (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    scraping_status VARCHAR,
+    filter_json JSONB,
+    metadata JSONB,
+    num_results INTEGER,
+    relay_url VARCHAR,
+    since INTEGER,
+    incrementer INTEGER,
+    until INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    finished_at TIMESTAMP
+);
 
+CREATE TABLE IF NOT EXISTS nostr_filter_scraping_logs_t (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    scraped_nostr_filter_id UUID,
+    filter_json JSONB,
+    metadata JSONB,
+    num_resulsts INTEGER,
+    relay_url VARCHAR,
+    since INTEGER,
+    until INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    log_data TEXT
+);
 
+-- Relay Metadata Stuff
 
+CREATE TABLE IF NOT EXISTS nostr_event_on_relay_t (
+    id VARCHAR,
+    relay_url VARCHAR,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_nostr_event_relay_metadata
+        FOREIGN KEY (id)
+        REFERENCES normalized_nostr_events_t (id)
+);
 
-CREATE TABLE IF NOT EXISTS nip05_metadata (
+-- To Actually Start Using
+
+CREATE TABLE IF NOT EXISTS nip05_metadata_t (
     pubkey VARCHAR,
     username VARCHAR,
     domain_name VARCHAR,
@@ -101,18 +132,6 @@ CREATE TABLE IF NOT EXISTS nip05_metadata (
     raw_result VARCHAR,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-CREATE TABLE IF NOT EXISTS simple_nostr_scraping_logs (
-    log_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    log_title VARCHAR,
-    log_status VARCHAR,
-    log_description TEXT,
-    filter_json JSONB,
-    log_data TEXT,
-    relay_url VARCHAR,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 
 
 -- CREATE TABLE IF NOT EXISTS nostr_events (

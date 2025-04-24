@@ -3,3 +3,4 @@ build
 *.sqlite
 *sqlite3*
 .DS_Store
+node_modules/

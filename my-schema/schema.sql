@@ -17,20 +17,17 @@ CREATE TABLE IF NOT EXISTS nostr_event_tags_t (
     CONSTRAINT fk_nostr_event_relay_metadata
         FOREIGN KEY (id)
         REFERENCES normalized_nostr_events_t (id)
-        ON DELETE CASCADE,
-    CONSTRAINT unique_nostr_event_tags UNIQUE (id, first_tag, tags)
+        ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS non_standard_nostr_event_tags_t (
     id VARCHAR,
     first_tag VARCHAR,
-    tags_hashed VARCHAR,
     tags JSONB,
     CONSTRAINT fk_non_standard_nostr_event_tags
         FOREIGN KEY (id)
         REFERENCES normalized_nostr_events_t (id)
-        ON DELETE CASCADE,
-    CONSTRAINT unique_non_standard_nostr_event_tags UNIQUE (id, first_tag, tags)
+        ON DELETE CASCADE
 );
 
 CREATE OR REPLACE FUNCTION insert_nostr_event_tags()
@@ -56,20 +53,18 @@ BEGIN
                 NEW.id,
                 first_tag_extracted,  -- Insert the tag directly
                 item::jsonb
-            ) ON CONFLICT (id, first_tag, tags) DO NOTHING;
+            );
         ELSE
             -- Insert into non_standard_nostr_event_tags
             INSERT INTO non_standard_nostr_event_tags_t (
                 id,
                 first_tag,
-                tags_hashed,
                 tags
             ) VALUES (
                 NEW.id,
                 first_tag_extracted,  -- Insert the tag directly
-                md5(item),
                 item
-            ) ON CONFLICT (id, first_tag, tags_hashed) DO NOTHING;
+            );
         END IF;
     END LOOP;
 

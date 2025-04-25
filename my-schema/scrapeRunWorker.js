@@ -42,8 +42,6 @@ async function loopFetch(input_params, save_to_db_amount) {
         ev.raw_event = JSON.stringify(ev)
         ev.is_verified = false
         delete ev.seenOn
-        // console.log("ev")
-        // console.log(ev)
         events_to_save.push(ev)
         event_ids.push({
             id: ev.id,
@@ -52,14 +50,9 @@ async function loopFetch(input_params, save_to_db_amount) {
         })
         count += 1
         if(events_to_save.length > save_to_db_amount){
-            console.log("Ingesting")
-            console.log(count)
-            console.log(events_to_save)
             await sql`insert into normalized_nostr_events_t ${ sql(events_to_save) } ON CONFLICT DO NOTHING;`
-            await sql`insert into nostr_event_on_relay_t ${ sql(event_ids) };`
-
             // Track what relay we got the events from
-
+            await sql`insert into nostr_event_on_relay_t ${ sql(event_ids) };`
             // Save the Logs
             const highest_created_at = Math.max(...events_to_save.map(obj => obj.created_at));
             const lowest_created_at = Math.max(...events_to_save.map(obj => obj.created_at));
@@ -72,9 +65,6 @@ async function loopFetch(input_params, save_to_db_amount) {
                 until: highest_created_at,
                 log_data: JSON.stringify(events_to_save)
             }
-            console.log("log_data")
-            console.log(log_data)
-            console.log(input_params.id)
             await sql`INSERT INTO nostr_filter_scraping_logs_t ${ sql(log_data)}`
             await sql`UPDATE scraping_nostr_filters_t 
                 SET ${ sql({
@@ -84,6 +74,12 @@ async function loopFetch(input_params, save_to_db_amount) {
             })}
                 WHERE ${sql( {id : input_params.id })}`
             events_to_save = []
+            // console.log("Ingesting")
+            // console.log(count)
+            // console.log(events_to_save)
+            // console.log("log_data")
+            // console.log(log_data)
+            // console.log(input_params.id)
         }
         // console.log(JSON.stringify(ev, null, 2));
         // console.log(count)

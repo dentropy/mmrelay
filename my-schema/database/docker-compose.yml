@@ -7,6 +7,7 @@ services:
       PGADMIN_DEFAULT_PASSWORD: postgres
     ports:
       - "15432:80"
+    restart: always
     networks:
       - my-network
     volumes:
@@ -25,6 +26,7 @@ services:
       - postgres-data:/var/lib/postgresql/data2
     ports:
       - "5433:5432"
+    restart: always
     networks:
       - my-network
 

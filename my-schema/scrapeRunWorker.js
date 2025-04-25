@@ -100,11 +100,11 @@ async function loopFetch(input_params, save_to_db_amount) {
             scraping_status: "COMPLETED"
         })}
         WHERE ${sql( {id : input_params.id })}`
-    // if (events_to_save.length >= 1){
-    //     console.log(events_to_save)
-    //     await sql`insert into normalized_nostr_events_t ${ sql(events_to_save) } ON CONFLICT DO NOTHING;`
-    // }
-    // console.log("DONE")
+    if (events_to_save.length >= 1){
+        console.log(events_to_save)
+        await sql`insert into normalized_nostr_events_t ${ sql(events_to_save) } ON CONFLICT DO NOTHING;`
+    }
+    console.log("DONE")
 }
 await loopFetch(job_data[0], 10)
 

@@ -86,9 +86,10 @@ CREATE TABLE IF NOT EXISTS scraping_nostr_filters_t (
     num_results INTEGER,
     relay_url VARCHAR,
     since INTEGER,
-    incrementer INTEGER,
     until INTEGER,
+    incrementer INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     finished_at TIMESTAMP
 );
 
@@ -97,7 +98,7 @@ CREATE TABLE IF NOT EXISTS nostr_filter_scraping_logs_t (
     scraped_nostr_filter_id UUID,
     filter_json JSONB,
     metadata JSONB,
-    num_resulsts INTEGER,
+    num_results INTEGER,
     relay_url VARCHAR,
     since INTEGER,
     until INTEGER,
@@ -105,12 +106,26 @@ CREATE TABLE IF NOT EXISTS nostr_filter_scraping_logs_t (
     log_data TEXT
 );
 
+CREATE OR REPLACE FUNCTION trigger_set_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER set_timestamp_on_nostr_scraping_jobs
+BEFORE UPDATE ON nostr_filter_scraping_logs_t
+FOR EACH ROW
+EXECUTE PROCEDURE trigger_set_timestamp();
+
 -- Relay Metadata Stuff
 
 CREATE TABLE IF NOT EXISTS nostr_event_on_relay_t (
     id VARCHAR,
     relay_url VARCHAR,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    logging_uuid VARCHAR,
     CONSTRAINT fk_nostr_event_relay_metadata
         FOREIGN KEY (id)
         REFERENCES normalized_nostr_events_t (id)

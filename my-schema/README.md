@@ -43,6 +43,7 @@ select * from scraping_nostr_filters_t;
 
 select * from nostr_filter_scraping_logs_t;
 select count(*) from nostr_filter_scraping_logs_t;
+
 ```
 
 

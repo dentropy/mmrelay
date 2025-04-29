@@ -26,6 +26,7 @@ async function load_nosdump_file(filepath, line_offst=0){
                 try {
                     var new_line = JSON.parse(line)
                     new_line.is_verified = false
+                    new_line.tags = JSON.stringify(new_line.tags)
                     new_line.raw_event = line
                     nostr_events.push(new_line)
                     count += 1
@@ -50,17 +51,19 @@ async function load_nosdump_file(filepath, line_offst=0){
         .on('error', function(err){
             console.log('Error while reading file.', err);
         })
-        .on('end', function(){
+        .on('end', async function(){
+            console.log("Supposed to load rest of them")
+            console.log(nostr_events.length)
+            try {
+                await sql`insert into normalized_nostr_events_t ${ sql(nostr_events) } ON CONFLICT DO NOTHING;`
+            } catch (error) {
+                console.log(error)
+            }
             console.log('Read entire file.')
         })
     );
-    if( nostr_events.length > 0) {
-        try {
-            await sql`insert into normalized_nostr_events_t ${ sql(nostr_events) } ON CONFLICT DO NOTHING;`
-        } catch (error) {
-            console.log(error)
-        }
-    }
 }
 
-load_nosdump_file("./damus-relay-2025-04-24.json")
+const args = process.argv.slice(2);
+console.log('User arguments:', args);
+load_nosdump_file(args[0])

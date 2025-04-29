@@ -5,15 +5,17 @@ CREATE TABLE IF NOT EXISTS normalized_nostr_events_t (
     pubkey VARCHAR NOT NULL,
     sig VARCHAR,
     content VARCHAR,
-    tags VARCHAR,
+    tags TEXT,
     raw_event VARCHAR,
     is_verified BOOLEAN
 );
 
+CREATE INDEX normalized_nostr_events_t_tags_column ON normalized_nostr_events_t ( tags );
+
 CREATE TABLE IF NOT EXISTS nostr_event_tags_t (
     id VARCHAR,
     first_tag VARCHAR,
-    tags JSONB,
+    tags TEXT,
     CONSTRAINT fk_nostr_event_relay_metadata
         FOREIGN KEY (id)
         REFERENCES normalized_nostr_events_t (id)

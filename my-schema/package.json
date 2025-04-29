@@ -15,6 +15,7 @@
     "ajv": "^8.17.1",
     "child-process": "^1.0.2",
     "dotenv": "^16.4.7",
+    "event-stream": "^4.0.1",
     "multiformats": "^13.3.2",
     "nostr-fetch": "^0.17.0",
     "nostr-tools": "^2.12.0",

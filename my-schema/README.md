@@ -28,6 +28,7 @@ export PGDATABASE=postgres
 export PGUSERNAME=postgres
 export PGPASSWORD=postgres
 
+node ./worker/nosdump-ingest4.js ./scrapedData/data.jsonnl
 ``` 
 
 
@@ -116,4 +117,13 @@ WHERE id = (
     LIMIT 1
 )
 RETURNING *;
+```
+
+#### Loading Data
+
+``` bash
+
+nosdump wss://relay.damus.io > ./scrapedData/data.jsonnl
+
+node ./worker/nosdump-ingest4.js ./scrapedData/data.jsonnl
 ```

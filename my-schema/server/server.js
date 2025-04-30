@@ -1,9 +1,14 @@
 import { WebSocketServer } from 'ws';
 import Ajv from "ajv";
-import sql from "../worker/db.js";
 import { verifyEvent } from 'nostr-tools/pure'
-const wss = new WebSocketServer({ port: 9090 });
+import postgres from 'postgres'
 
+const sql = await postgres(
+    process.env.PG_CONN_STRING, {
+    ssl: { rejectUnauthorized: false } 
+})
+
+const wss = new WebSocketServer({ port: 9090 });
 let subscriptions = {}
 
 
@@ -166,10 +171,5 @@ wss.on('connection', function connection(ws) {
     if (json_parsed_data[0] == "CLOSE") {
       ws.send(JSON.stringify(["NOTICE", `CLOSE message is not supported yet, you can't subscribe to real time EVENTS yet`]));
     }
-
-
-    // ws.send('something');
   });
-
-  // ws.send('Connected');
 });

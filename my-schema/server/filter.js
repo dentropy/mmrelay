@@ -21,10 +21,10 @@
 //   "until" : Math.floor((new Date()).getTime() / 1000) // Current Unix Time
 // }
 
-const filter = {
-  "until" : Math.floor((new Date()).getTime() / 1000), // Current Unix Time
-  limit: 100
-}
+// const filter = {
+//   "until" : Math.floor((new Date()).getTime() / 1000), // Current Unix Time
+//   limit: 100
+// }
 
 // const filter = {
 //   "kinds" : [4]
@@ -105,10 +105,11 @@ console.log("Complete")
 console.log(results[0]);
 console.log(results.length);
 
-// for(const result of results){
-//     let new_result = JSON.parse(result.raw_event)
-//     if(new_result.kind != 4) {
-//         console.log(new_result)
-//     }
-// }
+let kind_stats = {}
+for(const result of results){
+    let new_result = JSON.parse(result.raw_event)
+    if(new_result.kind != 4) {
+        console.log(new_result)
+    }
+}
 

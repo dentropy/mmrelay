@@ -1,5 +1,14 @@
-``` bash
+# Dentropy's Nostr Relay
 
+## Description
+
+This is a Nostr relay that also has the capacity to scrape other Nostr relays and log when they are storing which events.
+
+## Install
+
+``` bash
+git clone git@github.com:dentropy/nostr-sql-survey.git
+cd nostr-sql-survey
 cd my-schema
 cd database
 docker compose up -d
@@ -14,21 +23,12 @@ docker-compose down --volumes
 export PG_CONN_STRING="postgres://postgres:postgres@localhost:5433/postgres"
 psql $PG_CONN_STRING
 
-export PG_CONN_STRING="postgres://postgres:postgres@localhost:5433/postgres"
 psql $PG_CONN_STRING -f ./schema.sql
-
-export PG_CONN_STRING="postgres://postgres:postgres@localhost:5433/postgres"
 psql $PG_CONN_STRING -f ./database/delete.sql
 
+nosdump wss://relay.damus.io > ./scrapedData/data.jsonnl
 
-export PG_CONN_STRING="postgres://postgres:postgres@127.0.0.1:5433/postgres"
-export PGHOST=127.0.0.1
-export PGPORT=5433
-export PGDATABASE=postgres
-export PGUSERNAME=postgres
-export PGPASSWORD=postgres
-
-node ./worker/nosdump-ingest4.js ./scrapedData/data.jsonnl
+node ./worker/nosdump-ingest.js ./scrapedData/data.jsonnl
 ``` 
 
 
@@ -117,13 +117,4 @@ WHERE id = (
     LIMIT 1
 )
 RETURNING *;
-```
-
-#### Loading Data
-
-``` bash
-
-nosdump wss://relay.damus.io > ./scrapedData/data.jsonnl
-
-node ./worker/nosdump-ingest4.js ./scrapedData/data.jsonnl
 ```

@@ -1,6 +1,7 @@
 import { WebSocketServer } from 'ws';
 import Ajv from "ajv";
 import sql from "../worker/db.js";
+import { verifyEvent } from 'nostr-tools/pure'
 const wss = new WebSocketServer({ port: 9090 });
 
 let subscriptions = {}
@@ -66,6 +67,7 @@ wss.on('connection', function connection(ws) {
     } catch (error) {
       ws.send(JSON.stringify(["NOTICE", `Unable to process process JSON Data you provided Please provide a list,\n${data}\n\nCheck the Nostr Docs https://github.com/nostr-protocol/nips/blob/master/01.md`]));
     }
+    // Process the REQ filter
     if (json_parsed_data[0] == "REQ") {
       if (json_parsed_data.length < 3) {
         ws.send(JSON.stringify(["NOTICE", `REQ with subscription_id=${json_parsed_data[2]} does not have the correct number of arguments, needs three strings`]));
@@ -146,20 +148,23 @@ wss.on('connection', function connection(ws) {
       }
       ws.send(JSON.stringify(["CLOSED", subscription_id, "We don't have EOSE implimented"]))
       delete subscriptions[subscription_id]
-
     }
-    // Process the REQ filter
-    // If the Filter ID is already being used throw an Error
-    // Validate the Filter
-    // Perform SQL Query With Filter
-    // Return Results via ws.send
-    // Send CLOSE cause EOSE is not supported, maybe send a NOTICE
 
-    // TODO Accept new EVENTS
     if (json_parsed_data[0] == "EVENT") {
-      // Accept EVENT
-      // Send OK Message Back
-      ws.send(JSON.stringify(["NOTICE", `EVENT message is not supported yet, You can't send events to this relay`]));
+      if(json_parsed_data.length != 2) {
+        ws.send(JSON.stringify(["NOTICE", `The EVENT message you sent is not a JSON list of length 2`]));
+      }
+      if(!verifyEvent(json_parsed_data[1])){
+        ws.send(JSON.stringify(["NOTICE", `Could not verify the event`]));
+      }
+      var new_event = json_parsed_data[1]
+      new_event.raw_event = JSON.stringify(json_parsed_data[1])
+      new_event.is_verified = true
+      new_event.tags = JSON.stringify(json_parsed_data[1].tags)
+      ws.send(JSON.stringify(["OK", json_parsed_data[1].id, true, ""]));
+    }
+    if (json_parsed_data[0] == "CLOSE") {
+      ws.send(JSON.stringify(["NOTICE", `CLOSE message is not supported yet, you can't subscribe to real time EVENTS yet`]));
     }
 
 

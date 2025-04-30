@@ -7,6 +7,8 @@
 //     "limit": 123
 // }
 
+// const filter = {}
+
 // const filter = {
 //   "ids" : ["93967226e553227a3ea2509d5e27042bca1c2c8729218e92592c73e02649b877"],
 // }
@@ -19,13 +21,13 @@
 //   "until" : Math.floor((new Date()).getTime() / 1000) // Current Unix Time
 // }
 
-// const filter = {
-//   "until" : Math.floor((new Date()).getTime() / 1000), // Current Unix Time
-//   limit: 100
-// }
+const filter = {
+  "until" : Math.floor((new Date()).getTime() / 1000), // Current Unix Time
+  limit: 100
+}
 
 // const filter = {
-//   "kinds" : [0]
+//   "kinds" : [4]
 // }
 
 // const filter = {
@@ -37,19 +39,15 @@
 // }
 
 // const filter = {
-//   "limit" : 5
+//   authors: ["0a69cf2560597cd4dfff9a75f40261d902a91b139cdacea10d54a52b43219250"]
 // }
 
 // const filter = {
-//   authors: ["a44dbc9aaa357176a7d4f5c3106846ea096b66de0b50ee39aff54baab6c4bf4b"]
-// }
-
-const filter = {
-    "#e": ["632d3544b3345f72461837e253a47c0389069602017add711e837b5a544806d4"],
-};
+//     "#e": ["632d3544b3345f72461837e253a47c0389069602017add711e837b5a544806d4"],
+// };
 
 
-import sql from "./db.js";
+import sql from "../worker/db.js";
 
 function hasTagFilter(filter) {
     for (const key of Object.keys(filter)) {
@@ -69,27 +67,8 @@ function extractTagFilters(filter) {
     }
     return tagFilters;
 }
-
-// This can actually be one single string
-function writeTagSQLWhereClauses(filter) {
-    let filter_sql_query =
-        "JOIN nostr_event_tags_t ON normalized_nostr_events_t.id = nostr_event_tags_t.id WHERE\n";
-    for (const tmp_filter of extractTagFilters(filter)) {
-        filter_sql_query += ` normalized_nostr_events_t.tags LIKE '%${JSON.stringify(tmp_filter).slice(0, -1)
-            }%' \n`;
-        filter_sql_query += " AND ";
-    }
-    filter_sql_query = filter_sql_query.slice(0, -5);
-    console.log("filter_sql_query");
-    console.log(filter_sql_query);
-    return filter_sql_query;
-}
-
-
-console.log(extractTagFilters(filter))
-
 const conditions = extractTagFilters(filter).map((value) => sql` AND normalized_nostr_events_t.tags LIKE ${value} `);
-let result = await sql`
+let results = await sql`
     select
       normalized_nostr_events_t.raw_event
     from normalized_nostr_events_t
@@ -112,7 +91,7 @@ let result = await sql`
             }`
         : sql``
     }
-    ${extractTagFilters(filter).length < 10
+    ${extractTagFilters(filter).length < 10 && extractTagFilters(filter).length >= 1
         ? sql`${conditions}`
         : sql``
     }
@@ -123,18 +102,13 @@ let result = await sql`
     }
   `;
 console.log("Complete")
-console.log(result[0]);
-console.log(result.length);
+console.log(results[0]);
+console.log(results.length);
 
-
-/*
-
-
-    ${hasTagFilter(filter)
-        ? sql` and normalized_nostr_events_t.tags ~* ${regexPattern}`
-        : sql``
-    }
-
-    */
-
+// for(const result of results){
+//     let new_result = JSON.parse(result.raw_event)
+//     if(new_result.kind != 4) {
+//         console.log(new_result)
+//     }
+// }
 

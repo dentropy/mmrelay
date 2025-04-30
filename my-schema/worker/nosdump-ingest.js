@@ -13,7 +13,7 @@ try {
 }
 
 // https://stackoverflow.com/questions/16010915/parsing-huge-logfiles-in-node-js-read-in-line-by-line
-async function load_nosdump_file(filepath, line_offst=0){
+async function load_nosdump_file(filepath, batch_size=100, line_offst=0){
     let lineNr = 0;
     let count = 0
     let nostr_events = []
@@ -35,7 +35,7 @@ async function load_nosdump_file(filepath, line_offst=0){
                 }
                 count += 1;
             }
-            if (count >= 1000 && lineNr > line_offst) {
+            if (count >= batch_size && lineNr > line_offst) {
                 console.log(`Inserting ${lineNr} Lines`)
                 count = 0;
                 try {
@@ -54,10 +54,12 @@ async function load_nosdump_file(filepath, line_offst=0){
         .on('end', async function(){
             console.log("Supposed to load rest of them")
             console.log(nostr_events.length)
-            try {
-                await sql`insert into normalized_nostr_events_t ${ sql(nostr_events) } ON CONFLICT DO NOTHING;`
-            } catch (error) {
-                console.log(error)
+            if(nostr_events.length >= 1) {
+                try {
+                    await sql`insert into normalized_nostr_events_t ${ sql(nostr_events) } ON CONFLICT DO NOTHING;`
+                } catch (error) {
+                    console.log(error)
+                }
             }
             console.log('Read entire file.')
         })
@@ -66,4 +68,4 @@ async function load_nosdump_file(filepath, line_offst=0){
 
 const args = process.argv.slice(2);
 console.log('User arguments:', args);
-load_nosdump_file(args[0])
+load_nosdump_file(args[0], 100)

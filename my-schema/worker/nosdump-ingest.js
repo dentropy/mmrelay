@@ -50,7 +50,6 @@ async function load_nosdump_file(filepath, batch_size = 100, line_offst = 0) {
                             console.log("DOUBLE_ERROR")
                             console.log(JSON.stringify(nostr_event))
                             console.log(error)
-                            process.exit()
                         }
                     }
                 }
@@ -77,7 +76,6 @@ async function load_nosdump_file(filepath, batch_size = 100, line_offst = 0) {
                                 console.log("DOUBLE_ERROR")
                                 console.log(JSON.stringify(nostr_event))
                                 console.log(error)
-                                process.exit()
                             }
                         }
                     }

@@ -23,7 +23,7 @@ docker-compose down --volumes
 export PG_CONN_STRING="postgres://postgres:postgres@localhost:5433/postgres"
 psql $PG_CONN_STRING
 
-psql $PG_CONN_STRING -f ./schema.sql
+psql $PG_CONN_STRING -f ./database/schema.sql
 psql $PG_CONN_STRING -f ./database/delete.sql
 
 nosdump wss://relay.damus.io > ./scrapedData/data.jsonnl

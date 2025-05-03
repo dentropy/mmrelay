@@ -13,7 +13,7 @@ RUN trunk install pg_search
 RUN trunk install pg_analytics
 RUN trunk install pg_jsonschema
 RUN trunk install pgmq
-
+RUN trunk install postgis
 # # For postrest - https://docs.postgrest.org/en/stable/index.html
 # RUN sudo apt-get update
 # RUN sudo apt-get install -y curl

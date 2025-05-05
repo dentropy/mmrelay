@@ -4,13 +4,53 @@ import { verifyEvent } from 'nostr-tools/pure'
 import postgres from 'postgres'
 
 const sql = await postgres(
-    process.env.PG_CONN_STRING, {
-    ssl: { rejectUnauthorized: false } 
+  process.env.PG_CONN_STRING, {
+  ssl: { rejectUnauthorized: false }
 })
 
-const wss = new WebSocketServer({ port: 9090 });
+const PORT = 9090
+const wss = new WebSocketServer({ port: PORT });
 let subscriptions = {}
 
+
+function filter_event_validaor(filter, event) {
+  if (filter.authors != undefined) {
+    if (filter.authors.includes(event.pubkey)) {
+      return true
+    }
+  }
+  if (filter.ids != undefined) {
+    if (filter.ids.includes(event.id)) {
+      return true
+    }
+  }
+  if (filter.kinds != undefined) {
+    if (filter.kinds.includes(event.kind)) {
+      return true
+    }
+  }
+  if (filter.since != undefined) {
+    if (event.created_at < filter.since) {
+      return true
+    }
+  }
+  if (filter.until != undefined) {
+    if (event.created_at > filter.until) {
+      return true
+    }
+  }
+  if (filter.tags != undefined) {
+    if (event.tags.length > 0 && filter.tags > 0) {
+      for (const event_tag of events.tags) {
+        for (const filter_tag of filter.tags) {
+          if (JSON.stringify(filter_tag) in JSON.stringify(event_tag)) {
+            return true
+          }
+        }
+      }
+    }
+  }
+}
 
 let nostr_filter_json_schema = {
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -46,15 +86,14 @@ let nostr_filter_json_schema = {
   },
   "additionalProperties": true,
 }
-const ajv = new Ajv({ allErrors: true });
-const filter_validate = ajv.compile(nostr_filter_json_schema);
+
+const ajv = new Ajv({ allErrors: true })
+const filter_validate = ajv.compile(nostr_filter_json_schema)
 
 wss.on('connection', function connection(ws) {
   ws.on('error', console.error);
 
   ws.on('message', async function message(data) {
-    console.log('received: %s', data);
-    console.log(typeof (data))
     let json_parsed_data = {}
     try {
       json_parsed_data = JSON.parse(String(data))
@@ -65,7 +104,7 @@ wss.on('connection', function connection(ws) {
     console.log("json_parsed_data")
     console.log(json_parsed_data)
     try {
-      if ((json_parsed_data[0] in ["EVENT", "REQ", "CLOSE"])) {
+      if (json_parsed_data[0] in ["EVENT", "REQ", "CLOSE"]) {
         ws.send(JSON.stringify(["NOTICE", `Unable to process process JSON Data you provided Please provide a list with the first item being "EVENT", "REQ"\n${data}\n\nCheck the Nostr Docs https://github.com/nostr-protocol/nips/blob/master/01.md`]));
         return
       }
@@ -100,8 +139,10 @@ wss.on('connection', function connection(ws) {
         }
       }
       subscriptions[subscription_id] = {
+        subscription_id: subscription_id,
         filters: filters,
-        created_at: new Date()
+        created_at: new Date(),
+        ws: ws
       }
       function extractTagFilters(filter) {
         let tagFilters = [];
@@ -151,25 +192,60 @@ wss.on('connection', function connection(ws) {
           ws.send(JSON.stringify(["EVENT", json_parsed_data[2], JSON.parse(result.raw_event)]))
         }
       }
-      ws.send(JSON.stringify(["CLOSED", subscription_id, "We don't have EOSE implimented"]))
-      delete subscriptions[subscription_id]
+      // ws.send(JSON.stringify(["CLOSED", subscription_id, "We don't have EOSE implimented"]))
+      // delete subscriptions[subscription_id]
+      ws.send(JSON.stringify(["EOSE", subscription_id]))
     }
 
     if (json_parsed_data[0] == "EVENT") {
-      if(json_parsed_data.length != 2) {
+      if (json_parsed_data.length != 2) {
         ws.send(JSON.stringify(["NOTICE", `The EVENT message you sent is not a JSON list of length 2`]));
+        return
       }
-      if(!verifyEvent(json_parsed_data[1])){
-        ws.send(JSON.stringify(["NOTICE", `Could not verify the event`]));
+      console.log("EVENT_DATA")
+      let event_json = {}
+      try {
+        event_json = JSON.parse(json_parsed_data[1])
+      } catch (error) {
+        ws.send(JSON.stringify(["NOTICE", `Could not Parse JSON of Event`]))
+        return
       }
-      var new_event = json_parsed_data[1]
+      try {
+        if (!verifyEvent(JSON.parse(json_parsed_data[1]))) {
+          ws.send(JSON.stringify(["NOTICE", `Could not verify the event`]))
+          return
+        }
+      } catch (error) {
+        ws.send(JSON.stringify(["NOTICE", `Could not verify the event`]))
+        return
+      }
+      var new_event = event_json
       new_event.raw_event = JSON.stringify(json_parsed_data[1])
       new_event.is_verified = true
-      new_event.tags = JSON.stringify(json_parsed_data[1].tags)
-      ws.send(JSON.stringify(["OK", json_parsed_data[1].id, true, ""]));
+      new_event.tags = JSON.stringify(event_json.tags)
+      ws.send(JSON.stringify(["OK", event_json.id, true, ""]))
+      try {
+        await sql`insert into normalized_nostr_events_t ${sql([new_event])} ON CONFLICT DO NOTHING;`
+      } catch (error) {
+        console.log("ERROR INSERTING INTO DATABASE")
+        console.log(JSON.stringify(nostr_event))
+        console.log(error)
+        ws.send(JSON.stringify(["NOTICE", `Error inserting into database`]))
+        return
+      }
+      for (const subscription of Object.keys(subscriptions)) {
+        for(const filter of subscriptions[subscription].filters) {
+          if (filter_event_validaor(filter, new_event)) {
+            subscriptions[subscription].ws.send((JSON.stringify(["EVENT", subscription, json_parsed_data[1]])))
+            break
+          }
+        }
+      }
     }
     if (json_parsed_data[0] == "CLOSE") {
-      ws.send(JSON.stringify(["NOTICE", `CLOSE message is not supported yet, you can't subscribe to real time EVENTS yet`]));
+      ws.send(JSON.stringify(["NOTICE", `CLOSE message is not supported yet, you can't subscribe to real time EVENTS yet`]))
     }
-  });
-});
+  })
+})
+
+console.log(`Server Started Successfully on PORT = ${PORT}`)

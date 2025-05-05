@@ -23,5 +23,8 @@
     "postgres": "^3.4.5",
     "uuid": "^11.1.0",
     "ws": "^8.18.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
   }
 }

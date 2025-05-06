@@ -12,7 +12,25 @@ const PORT = 9090
 const wss = new WebSocketServer({ port: PORT });
 let subscriptions = {}
 
+function extractTagFilters(filter) {
+  let tagFilters = [];
+  for (const key of Object.keys(filter)) {
+    if (key[0] == "#") {
+      tagFilters.push(String("%" + JSON.stringify([key.slice(1)].concat(filter[key])).slice(0, -1) + "%"));
+    }
+  }
+  return tagFilters;
+}
 
+function extractTagFiltersJSON(filter) {
+  let tagFilters = [];
+  for (const key of Object.keys(filter)) {
+    if (key[0] == "#") {
+      tagFilters.push(JSON.stringify([key.slice(1)].concat(filter[key])).slice(0, -1));
+    }
+  }
+  return tagFilters;
+}
 function filter_event_validaor(filter, event) {
   if (filter.authors != undefined) {
     if (filter.authors.includes(event.pubkey)) {
@@ -39,11 +57,12 @@ function filter_event_validaor(filter, event) {
       return true
     }
   }
-  if (filter.tags != undefined) {
-    if (event.tags.length > 0 && filter.tags > 0) {
-      for (const event_tag of events.tags) {
-        for (const filter_tag of filter.tags) {
-          if (JSON.stringify(filter_tag) in JSON.stringify(event_tag)) {
+  const extracted_tags = extractTagFiltersJSON(filter)
+  if (extracted_tags.length > 0) {
+    if (event.tags.length > 0 && extracted_tags.length > 0) {
+      for (const event_tag of JSON.parse(event.tags)) {
+        for (const filter_tag of extracted_tags) {
+          if (JSON.stringify(event_tag).includes(filter_tag)) {
             return true
           }
         }
@@ -143,15 +162,6 @@ wss.on('connection', function connection(ws) {
         filters: filters,
         created_at: new Date(),
         ws: ws
-      }
-      function extractTagFilters(filter) {
-        let tagFilters = [];
-        for (const key of Object.keys(filter)) {
-          if (key[0] == "#") {
-            tagFilters.push(String("%" + JSON.stringify([key.slice(1)].concat(filter[key])).slice(0, -1) + "%"));
-          }
-        }
-        return tagFilters;
       }
       for (const filter of filters) {
         const conditions = extractTagFilters(filter).map((value) => sql` AND normalized_nostr_events_t.tags LIKE ${value} `);

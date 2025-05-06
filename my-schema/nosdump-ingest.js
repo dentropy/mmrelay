@@ -96,7 +96,7 @@ async function load_nosdump_file(filepath, batch_size = 100, line_offst = 0) {
                 count += 1;
             }
             if (count >= batch_size && lineNr > line_offst) {
-                console.log(`Inserting ${lineNr} Lines`)
+                console.log(`Inserting ${lineNr} Lines ${(new Date).toISOString()}`)
                 count = 0;
                 await insert_the_data(nostr_events, nostr_events_content_indexed)
                 nostr_events = []

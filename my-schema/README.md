@@ -28,7 +28,7 @@ psql $PG_CONN_STRING -f ./database/delete.sql
 
 nosdump wss://relay.damus.io > ./scrapedData/data.jsonnl
 
-node ./worker/nosdump-ingest.js ./scrapedData/data.jsonnl
+node ./nosdump-ingest.js ./scrapedData/data.jsonnl
 ``` 
 
 

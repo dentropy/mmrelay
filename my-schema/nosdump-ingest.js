@@ -2,7 +2,7 @@ import fs from 'fs'
 import es from 'event-stream';
 
 
-import sql from "./db.js";
+import sql from "./experiments/experiments/db.js";
 
 try {
     let result = await sql`SELECT NOW() as now;`;
@@ -26,6 +26,7 @@ async function load_nosdump_file(filepath, batch_size = 100, line_offst = 0) {
                 try {
                     var new_line = JSON.parse(line)
                     new_line.is_verified = false
+                    new_line.num_tags = new_line.tags.length
                     new_line.tags = JSON.stringify(new_line.tags)
                     new_line.raw_event = line
                     nostr_events.push(new_line)

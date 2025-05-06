@@ -231,6 +231,7 @@ wss.on('connection', function connection(ws) {
       }
       var new_event = event_json
       new_event.raw_event = JSON.stringify(json_parsed_data[1])
+      new_event.num_tags = new_event.tags.length
       new_event.is_verified = true
       new_event.tags = JSON.stringify(event_json.tags)
       ws.send(JSON.stringify(["OK", event_json.id, true, ""]))

@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS normalized_nostr_events_t (
     sig VARCHAR,
     content VARCHAR,
     tags TEXT,
+    num_tags INTEGER,
     raw_event VARCHAR,
     is_verified BOOLEAN
 );

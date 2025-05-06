@@ -239,11 +239,67 @@ wss.on('connection', function connection(ws) {
         await sql`insert into normalized_nostr_events_t ${sql([new_event])} ON CONFLICT DO NOTHING;`
       } catch (error) {
         console.log("ERROR INSERTING INTO DATABASE")
-        console.log(JSON.stringify(nostr_event))
+        console.log(JSON.stringify(new_event))
         console.log(error)
         ws.send(JSON.stringify(["NOTICE", `Error inserting into database`]))
         return
       }
+
+
+      // Full Text Search Functionality
+      let nostr_events_content_indexed = []
+      if ([1, 10002].includes(new_event.kind) && new_event.content.length != 0) {
+        let event_to_index = {}
+        event_to_index.content = new_event.content
+        if (new_event.tags.includes("title")) {
+            try {
+                let tags = JSON.parse(new_event.tags)
+                for (const tag of tags) {
+                    if (tag[0] == "title") {
+                        event_to_index.title = tag[1]
+                        event_to_index.search_vector += "Title " + tag[1]
+                    }
+                }
+            } catch (error) {
+                console.log(`Error processing title: ${new_event.id}`)
+            }
+        }
+        try {
+          await sql`insert into normalized_nostr_events_t ${sql([new_event])} ON CONFLICT DO NOTHING;`
+        } catch (error) {
+          console.log("ERROR INSERTING INTO DATABASE")
+          console.log(JSON.stringify(new_event))
+          console.log(error)
+          ws.send(JSON.stringify(["NOTICE", `Error inserting into database`]))
+          return
+        }
+        if (new_event.tags.includes("summary")) {
+            try {
+                let tags = JSON.parse(nostr_event.tags)
+                for (const tag of tags) {
+                    if (tag[0] == "summary") {
+                        event_to_index.title = tag[1]
+                        event_to_index.search_vector += "\nSummary " + tag[1]
+                    }
+                }
+            } catch (error) {
+                console.log(`Error processing summary: ${new_event.id}`)
+            }
+        }
+        nostr_events_content_indexed.push(event_to_index)
+        console.log(`nostr_events_content_indexed.length = ${nostr_events_content_indexed.length}`)
+        if (nostr_events_content_indexed.length >= 1) {
+            try {
+                await sql`insert into nostr_event_content_indexed ${sql(nostr_events_content_indexed)} ON CONFLICT DO NOTHING;`
+            } catch (error) {
+                console.log("INSERT tsvector error")
+                console.log(error)
+            }
+        }
+
+
+
+    }
       for (const subscription of Object.keys(subscriptions)) {
         for(const filter of subscriptions[subscription].filters) {
           if (filter_event_validaor(filter, new_event)) {

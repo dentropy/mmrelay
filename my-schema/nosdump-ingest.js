@@ -12,11 +12,37 @@ try {
     process.exit()
 }
 
+async function insert_the_data(nostr_events, nostr_events_content_indexed){
+    try {
+        await sql`insert into normalized_nostr_events_t ${sql(nostr_events)} ON CONFLICT DO NOTHING;`
+    } catch (error) {
+        console.log("ERROR, PROCESSING EVENTS INDIVIDUALLY")
+        for (const nostr_event of nostr_events) {
+            try {
+                await sql`insert into normalized_nostr_events_t ${sql([nostr_event])} ON CONFLICT DO NOTHING;`
+            } catch (error) {
+                console.log("DOUBLE_ERROR")
+                console.log(JSON.stringify(nostr_event))
+                console.log(error)
+            }
+        }
+    }
+    console.log(`nostr_events_content_indexed.length = ${nostr_events_content_indexed.length}`)
+    if (nostr_events_content_indexed.length >= 1) {
+        try {
+            await sql`insert into nostr_event_content_indexed ${sql(nostr_events_content_indexed)} ON CONFLICT DO NOTHING;`
+        } catch (error) {
+            console.log("INSERT tsvector error")
+            console.log(error)
+        }
+    }
+}
 // https://stackoverflow.com/questions/16010915/parsing-huge-logfiles-in-node-js-read-in-line-by-line
 async function load_nosdump_file(filepath, batch_size = 100, line_offst = 0) {
     let lineNr = 0;
     let count = 0
     let nostr_events = []
+    let nostr_events_content_indexed = []
     var s = fs.createReadStream(filepath)
         .pipe(es.split())
         .pipe(es.mapSync(async function (line) {
@@ -30,8 +56,38 @@ async function load_nosdump_file(filepath, batch_size = 100, line_offst = 0) {
                     new_line.tags = JSON.stringify(new_line.tags)
                     new_line.raw_event = line
                     nostr_events.push(new_line)
-                    
                     count += 1
+                    if ([1, 10002].includes(new_line.kind) && new_line.content.length != 0) {
+                        let event_to_index = {}
+                        event_to_index.content = new_line.content
+                        if (new_line.tags.includes("title")) {
+                            try {
+                                let tags = JSON.parse(new_line.tags)
+                                for (const tag of tags) {
+                                    if (tag[0] == "title") {
+                                        event_to_index.title = tag[1]
+                                        event_to_index.search_vector += "Title " + tag[1]
+                                    }
+                                }
+                            } catch (error) {
+                                console.log(`Error processing title: ${new_line.id}`)
+                            }
+                        }
+                        if (new_line.tags.includes("summary")) {
+                            try {
+                                let tags = JSON.parse(new_line.tags)
+                                for (const tag of tags) {
+                                    if (tag[0] == "summary") {
+                                        event_to_index.title = tag[1]
+                                        event_to_index.search_vector += "\nSummary " + tag[1]
+                                    }
+                                }
+                            } catch (error) {
+                                console.log(`Error processing summary: ${new_line.id}`)
+                            }
+                        }
+                        nostr_events_content_indexed.push(event_to_index)
+                    }
                 } catch (error) {
                     console.log(`Unable to process lineNr=${lineNr}`)
                 }
@@ -40,20 +96,7 @@ async function load_nosdump_file(filepath, batch_size = 100, line_offst = 0) {
             if (count >= batch_size && lineNr > line_offst) {
                 console.log(`Inserting ${lineNr} Lines`)
                 count = 0;
-                try {
-                    await sql`insert into normalized_nostr_events_t ${sql(nostr_events)} ON CONFLICT DO NOTHING;`
-                } catch (error) {
-                    console.log("ERROR, PROCESSING EVENTS INDIVIDUALLY")
-                    for(const nostr_event of nostr_events) {
-                        try {
-                            await sql`insert into normalized_nostr_events_t ${sql([nostr_event])} ON CONFLICT DO NOTHING;`
-                        } catch (error) {
-                            console.log("DOUBLE_ERROR")
-                            console.log(JSON.stringify(nostr_event))
-                            console.log(error)
-                        }
-                    }
-                }
+                await insert_the_data(nostr_events, nostr_events_content_indexed)
                 nostr_events = []
                 count = 0
             }
@@ -65,22 +108,7 @@ async function load_nosdump_file(filepath, batch_size = 100, line_offst = 0) {
             .on('end', async function () {
                 console.log("Supposed to load rest of them")
                 console.log(nostr_events.length)
-                if (nostr_events.length >= 1) {
-                    try {
-                        await sql`insert into normalized_nostr_events_t ${sql(nostr_events)} ON CONFLICT DO NOTHING;`
-                    } catch (error) {
-                        console.log("ERROR, PROCESSING EVENTS INDIVIDUALLY")
-                        for(const nostr_event of nostr_events) {
-                            try {
-                                await sql`insert into normalized_nostr_events_t ${sql([nostr_event])} ON CONFLICT DO NOTHING;`
-                            } catch (error) {
-                                console.log("DOUBLE_ERROR")
-                                console.log(JSON.stringify(nostr_event))
-                                console.log(error)
-                            }
-                        }
-                    }
-                }
+                await insert_the_data(nostr_events, nostr_events_content_indexed)
                 console.log('Read entire file.')
             })
         );

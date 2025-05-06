@@ -147,6 +147,20 @@ CREATE TABLE IF NOT EXISTS nip05_metadata_t (
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE nostr_event_content_indexed (
+    id VARCHAR PRIMARY,
+    title VARCHAR,
+    content TEXT,
+    summary TEXT,
+    CONSTRAINT fk_non_standard_nostr_event_tags
+        FOREIGN KEY (id)
+        REFERENCES normalized_nostr_events_t (id)
+        ON DELETE CASCADE
+);
+ALTER TABLE nostr_event_content_indexed
+ADD COLUMN search_vector tsvector
+GENERATED ALWAYS AS (to_tsvector('english', coalesce(title, '') || ' ' || coalesce(summary, '') || ' ' || coalesce(content, ''))) STORED;
+CREATE INDEX nostr_event_content_index ON nostr_event_content_indexed USING gin(search_vector);
 
 -- CREATE TABLE IF NOT EXISTS nostr_events (
 --     event_id VARCHAR NOT NULL UNIQUE,

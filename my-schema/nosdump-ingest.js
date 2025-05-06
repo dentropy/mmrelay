@@ -30,6 +30,7 @@ async function insert_the_data(nostr_events, nostr_events_content_indexed){
     console.log(`nostr_events_content_indexed.length = ${nostr_events_content_indexed.length}`)
     if (nostr_events_content_indexed.length >= 1) {
         try {
+            // console.log(JSON.stringify(nostr_events_content_indexed, null, 2))
             await sql`insert into nostr_event_content_indexed ${sql(nostr_events_content_indexed)} ON CONFLICT DO NOTHING;`
         } catch (error) {
             console.log("INSERT tsvector error")
@@ -59,6 +60,7 @@ async function load_nosdump_file(filepath, batch_size = 100, line_offst = 0) {
                     count += 1
                     if ([1, 10002].includes(new_line.kind) && new_line.content.length != 0) {
                         let event_to_index = {}
+                        event_to_index.id = new_line.id
                         event_to_index.content = new_line.content
                         if (new_line.tags.includes("title")) {
                             try {

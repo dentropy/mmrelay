@@ -6,7 +6,9 @@ else
   echo "Using default PG_CONN_STRING"
 fi
 echo "PG_CONN_STRING is set to $PG_CONN_STRING"
-echo "Running delete.sql script"
-psql $PG_CONN_STRING -f ./database/delete.sql
+# echo "Running delete.sql script"
+# psql $PG_CONN_STRING -f ./database/delete.sql
+echo "Running drop.sql script"
+psql $PG_CONN_STRING -f ./database/drop.sql
 echo "Running schema.sql script"
 psql $PG_CONN_STRING -f ./database/schema.sql

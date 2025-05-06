@@ -169,7 +169,15 @@ wss.on('connection', function connection(ws) {
         select
           normalized_nostr_events_t.raw_event
         from normalized_nostr_events_t
+        ${Object.hasOwn(filter, "search")
+          ? sql` JOIN nostr_event_content_indexed ON normalized_nostr_events_t.id = nostr_event_content_indexed.id`
+          : sql``
+        }
         WHERE 1 = 1
+        ${Object.hasOwn(filter, "search")
+          ? sql` and nostr_event_content_indexed.search_vector @@ websearch_to_tsquery('english', ${filter.search})`
+          : sql``
+        }
         ${Object.hasOwn(filter, "ids")
             ? sql` and normalized_nostr_events_t.id in ${sql(filter["ids"])}`
             : sql``
@@ -198,6 +206,7 @@ wss.on('connection', function connection(ws) {
             : sql`limit 500`
           }
       `;
+      console.log(results)
         for (const result of results) {
           ws.send(JSON.stringify(["EVENT", json_parsed_data[2], JSON.parse(result.raw_event)]))
         }
@@ -250,6 +259,7 @@ wss.on('connection', function connection(ws) {
       let nostr_events_content_indexed = []
       if ([1, 10002].includes(new_event.kind) && new_event.content.length != 0) {
         let event_to_index = {}
+        event_to_index.id = new_event.id
         event_to_index.content = new_event.content
         if (new_event.tags.includes("title")) {
             try {

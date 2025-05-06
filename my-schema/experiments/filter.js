@@ -46,6 +46,10 @@
 //     "#e": ["632d3544b3345f72461837e253a47c0389069602017add711e837b5a544806d4"],
 // };
 
+// const filter = {
+//     search: "bitcoin"
+// };
+
 
 import sql from "../worker/db.js";
 

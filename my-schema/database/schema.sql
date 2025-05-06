@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS nip05_metadata_t (
 );
 
 CREATE TABLE nostr_event_content_indexed (
-    id VARCHAR PRIMARY,
+    id VARCHAR not NULL,
     title VARCHAR,
     content TEXT,
     summary TEXT,

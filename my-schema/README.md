@@ -27,6 +27,7 @@ psql $PG_CONN_STRING
 # Same as the following
 psql $PG_CONN_STRING -f ./database/schema.sql
 psql $PG_CONN_STRING -f ./database/delete.sql
+psql $PG_CONN_STRING -f ./database/drop.sql
 
 nosdump wss://relay.damus.io > ./scrapedData/data.jsonnl
 

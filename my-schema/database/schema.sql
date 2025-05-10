@@ -13,7 +13,10 @@ CREATE TABLE IF NOT EXISTS normalized_nostr_events_t (
 
 CREATE TABLE IF NOT EXISTS nostr_event_tags_t (
     id VARCHAR,
+    tag_json_index INTEGER,
     first_tag VARCHAR,
+    second_tag VARCHAR,
+    third_tag VARCHAR,
     tags TEXT,
     CONSTRAINT fk_nostr_event_relay_metadata
         FOREIGN KEY (id)
@@ -23,7 +26,10 @@ CREATE TABLE IF NOT EXISTS nostr_event_tags_t (
 
 CREATE TABLE IF NOT EXISTS non_standard_nostr_event_tags_t (
     id VARCHAR,
+    tag_json_index INTEGER,
     first_tag VARCHAR,
+    second_tag VARCHAR,
+    third_tag VARCHAR,
     tags JSONB,
     CONSTRAINT fk_non_standard_nostr_event_tags
         FOREIGN KEY (id)
@@ -37,35 +43,54 @@ DECLARE
     nested_tags JSONB;
     item JSONB;
     first_tag_extracted VARCHAR;
+    second_tag_extracted VARCHAR;
+    third_tag_extracted VARCHAR;
+    count_tag_json_index INTEGER;
 BEGIN
     -- Loop through the JSONB array 'tags' from the NEW record
+    count_tag_json_index := 0;
     FOR item IN
         SELECT jsonb_array_elements(NEW.raw_event::jsonb->'tags') AS tag
     LOOP
         -- Check if the tag matches the pattern
         first_tag_extracted := item::jsonb->>0;
+        second_tag_extracted := item::jsonb->>1;
+        third_tag_extracted := item::jsonb->>2;
         IF first_tag_extracted ~ '^[A-Za-z]{1,2}$' THEN
             -- Insert into nostr_event_tags
             INSERT INTO nostr_event_tags_t (
                 id,
                 first_tag,
-                tags
+                second_tag,
+                third_tag,
+                tags,
+                tag_json_index
             ) VALUES (
                 NEW.id,
                 first_tag_extracted,  -- Insert the tag directly
-                item::jsonb
+                second_tag_extracted,
+                third_tag_extracted,
+                item::jsonb,
+                count_tag_json_index
             );
         ELSE
             -- Insert into non_standard_nostr_event_tags
             INSERT INTO non_standard_nostr_event_tags_t (
                 id,
                 first_tag,
-                tags
+                second_tag,
+                third_tag,
+                tags,
+                tag_json_index
             ) VALUES (
                 NEW.id,
                 first_tag_extracted,  -- Insert the tag directly
-                item
+                second_tag_extracted,
+                third_tag_extracted,
+                item,
+                count_tag_json_index
             );
+        count_tag_json_index := count_tag_json_index + 1;
         END IF;
     END LOOP;
 

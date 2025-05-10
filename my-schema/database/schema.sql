@@ -11,9 +11,6 @@ CREATE TABLE IF NOT EXISTS normalized_nostr_events_t (
     is_verified BOOLEAN
 );
 
---- Doesn't work cause many tags are too long max number of bytes is 8191
---- CREATE INDEX normalized_nostr_events_t_tags_column ON normalized_nostr_events_t ( tags );
-
 CREATE TABLE IF NOT EXISTS nostr_event_tags_t (
     id VARCHAR,
     first_tag VARCHAR,

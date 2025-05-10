@@ -1,10 +1,11 @@
-const ws = new WebSocket("ws://localhost:9876")
+const ws = new WebSocket("ws://localhost:9876/foo")
 
 
 // send a subscription request for text notes from authors with my pubkey
 ws.addEventListener('open', async function (event) {
     let count = 0
     while(true) {
+        console.log("HELLO WORLD")
         ws.send(`Hello World ${count++}`);
         await new Promise(resolve => setTimeout(resolve, 1000));
     }

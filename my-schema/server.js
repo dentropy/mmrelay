@@ -31,6 +31,7 @@ function extractTagFiltersJSON(filter) {
   }
   return tagFilters;
 }
+
 function filter_event_validaor(filter, event) {
   if (filter.authors != undefined) {
     if (filter.authors.includes(event.pubkey)) {

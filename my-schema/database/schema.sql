@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS nostr_event_tags_t (
     first_tag VARCHAR,
     second_tag VARCHAR,
     third_tag VARCHAR,
+    fourth_tag VARCHAR,
     tags TEXT,
     CONSTRAINT fk_nostr_event_relay_metadata
         FOREIGN KEY (id)
@@ -30,6 +31,7 @@ CREATE TABLE IF NOT EXISTS non_standard_nostr_event_tags_t (
     first_tag VARCHAR,
     second_tag VARCHAR,
     third_tag VARCHAR,
+    fourth_tag VARCHAR,
     tags JSONB,
     CONSTRAINT fk_non_standard_nostr_event_tags
         FOREIGN KEY (id)
@@ -45,6 +47,7 @@ DECLARE
     first_tag_extracted VARCHAR;
     second_tag_extracted VARCHAR;
     third_tag_extracted VARCHAR;
+    fourth_tag_extracted VARCHAR;
     count_tag_json_index INTEGER;
 BEGIN
     -- Loop through the JSONB array 'tags' from the NEW record
@@ -56,6 +59,7 @@ BEGIN
         first_tag_extracted := item::jsonb->>0;
         second_tag_extracted := item::jsonb->>1;
         third_tag_extracted := item::jsonb->>2;
+        fourth_tag_extracted := item::jsonb->>3;
         IF first_tag_extracted ~ '^[A-Za-z]{1,2}$' THEN
             -- Insert into nostr_event_tags
             INSERT INTO nostr_event_tags_t (
@@ -63,6 +67,7 @@ BEGIN
                 first_tag,
                 second_tag,
                 third_tag,
+                fourth_tag,
                 tags,
                 tag_json_index
             ) VALUES (
@@ -70,6 +75,7 @@ BEGIN
                 first_tag_extracted,  -- Insert the tag directly
                 second_tag_extracted,
                 third_tag_extracted,
+                fourth_tag_extracted,
                 item::jsonb,
                 count_tag_json_index
             );
@@ -80,6 +86,7 @@ BEGIN
                 first_tag,
                 second_tag,
                 third_tag,
+                fourth_tag,
                 tags,
                 tag_json_index
             ) VALUES (
@@ -87,6 +94,7 @@ BEGIN
                 first_tag_extracted,  -- Insert the tag directly
                 second_tag_extracted,
                 third_tag_extracted,
+                fourth_tag_extracted,
                 item,
                 count_tag_json_index
             );

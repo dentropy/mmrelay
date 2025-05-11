@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --config ./mocha.config.js --timeout 5000"
+    "test": "mocha --config ./mocha.config.js --timeout 5000",
+    "nip29": "mocha --config ./nip29.mocha.config.js --timeout 5000 ./testnip29/*.test.js"
   },
   "keywords": [],
   "author": "",

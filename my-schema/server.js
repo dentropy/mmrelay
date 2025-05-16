@@ -133,29 +133,38 @@ wss.on('connection', function connection(ws) {
     }
     // Process the REQ filter
     if (json_parsed_data[0] == "REQ") {
+      let filter_json = json_parsed_data[2]
+      console.log("PAUL_WAS_HERE_REQ")
+      console.log(filter_json)
       if (json_parsed_data.length < 3) {
-        ws.send(JSON.stringify(["NOTICE", `REQ with subscription_id=${json_parsed_data[2]} does not have the correct number of arguments, needs three strings`]));
+        ws.send(JSON.stringify(["NOTICE", `REQ with subscription_id=${filter_json} does not have the correct number of arguments, needs three strings`]));
         return
       }
       if (Object.keys(subscriptions).includes(json_parsed_data[2])) {
-        ws.send(JSON.stringify(["NOTICE", `REQ with subscription_id=${json_parsed_data[2]} is already taken please choose another one`]));
+        ws.send(JSON.stringify(["NOTICE", `REQ with subscription_id=${filter_json} is already taken please choose another one`]));
         return
       }
+      console.log("PAUL_FILTERS_0")
+      console.log(filter_json)
       // Validate Filter
-      if (filter_validate(json_parsed_data[2])) {
-        ws.send(JSON.stringify(["NOTICE", `REQ with subscription_id=${json_parsed_data[2]} has an invalid filter`]));
+      if (!filter_validate(filter_json)) {
+        ws.send(JSON.stringify(["NOTICE", `REQ with subscription_id=${filter_json} has an invalid filter`]));
         return
       }
       let subscription_id = String(json_parsed_data[1])
       json_parsed_data.splice(0, 2)
       let filters = json_parsed_data
-      filters.forEach((item, index) => filters[index] = JSON.parse(filters[index]));
-      console.log("filters")
+      console.log("PAUL_FILTERS")
       console.log(filters)
-      for (const filter of filters) {
-        if (!filter_validate(filter)) {
-          ws.send(JSON.stringify(["NOTICE", `REQ with subscription_id=${filter} has an invalid filter`]));
-          return
+      if (filters.length != undefined) {
+        filters.forEach((item, index) => filters[index] = filters[index]);
+        for (const filter of filters) {
+          console.log("FILTER")
+          console.log(filter)
+          if (!filter_validate(filter)) {
+            ws.send(JSON.stringify(["NOTICE", `REQ with subscription_id=${filter} has an invalid filter`]));
+            return
+          }
         }
       }
       subscriptions[subscription_id] = {
@@ -171,14 +180,14 @@ wss.on('connection', function connection(ws) {
           normalized_nostr_events_t.raw_event
         from normalized_nostr_events_t
         ${Object.hasOwn(filter, "search")
-          ? sql` JOIN nostr_event_content_indexed ON normalized_nostr_events_t.id = nostr_event_content_indexed.id`
-          : sql``
-        }
+            ? sql` JOIN nostr_event_content_indexed ON normalized_nostr_events_t.id = nostr_event_content_indexed.id`
+            : sql``
+          }
         WHERE 1 = 1
         ${Object.hasOwn(filter, "search")
-          ? sql` and nostr_event_content_indexed.search_vector @@ websearch_to_tsquery('english', ${filter.search})`
-          : sql``
-        }
+            ? sql` and nostr_event_content_indexed.search_vector @@ websearch_to_tsquery('english', ${filter.search})`
+            : sql``
+          }
         ${Object.hasOwn(filter, "ids")
             ? sql` and normalized_nostr_events_t.id in ${sql(filter["ids"])}`
             : sql``
@@ -207,9 +216,9 @@ wss.on('connection', function connection(ws) {
             : sql`limit 500`
           }
       `;
-      console.log(results)
+        console.log(results)
         for (const result of results) {
-          ws.send(JSON.stringify(["EVENT", json_parsed_data[2], JSON.parse(result.raw_event)]))
+          ws.send(JSON.stringify(["EVENT", subscription_id, JSON.parse(result.raw_event)]))
         }
       }
       // ws.send(JSON.stringify(["CLOSED", subscription_id, "We don't have EOSE implimented"]))
@@ -225,13 +234,13 @@ wss.on('connection', function connection(ws) {
       console.log("EVENT_DATA")
       let event_json = {}
       try {
-        event_json = JSON.parse(json_parsed_data[1])
+        event_json = json_parsed_data[1]
       } catch (error) {
         ws.send(JSON.stringify(["NOTICE", `Could not Parse JSON of Event`]))
         return
       }
       try {
-        if (!verifyEvent(JSON.parse(json_parsed_data[1]))) {
+        if (!verifyEvent(json_parsed_data[1])) {
           ws.send(JSON.stringify(["NOTICE", `Could not verify the event`]))
           return
         }
@@ -263,17 +272,17 @@ wss.on('connection', function connection(ws) {
         event_to_index.id = new_event.id
         event_to_index.content = new_event.content
         if (new_event.tags.includes("title")) {
-            try {
-                let tags = JSON.parse(new_event.tags)
-                for (const tag of tags) {
-                    if (tag[0] == "title") {
-                        event_to_index.title = tag[1]
-                        event_to_index.search_vector += "Title " + tag[1]
-                    }
-                }
-            } catch (error) {
-                console.log(`Error processing title: ${new_event.id}`)
+          try {
+            let tags = JSON.parse(new_event.tags)
+            for (const tag of tags) {
+              if (tag[0] == "title") {
+                event_to_index.title = tag[1]
+                event_to_index.search_vector += "Title " + tag[1]
+              }
             }
+          } catch (error) {
+            console.log(`Error processing title: ${new_event.id}`)
+          }
         }
         try {
           await sql`insert into normalized_nostr_events_t ${sql([new_event])} ON CONFLICT DO NOTHING;`
@@ -285,34 +294,34 @@ wss.on('connection', function connection(ws) {
           return
         }
         if (new_event.tags.includes("summary")) {
-            try {
-                let tags = JSON.parse(nostr_event.tags)
-                for (const tag of tags) {
-                    if (tag[0] == "summary") {
-                        event_to_index.title = tag[1]
-                        event_to_index.search_vector += "\nSummary " + tag[1]
-                    }
-                }
-            } catch (error) {
-                console.log(`Error processing summary: ${new_event.id}`)
+          try {
+            let tags = JSON.parse(nostr_event.tags)
+            for (const tag of tags) {
+              if (tag[0] == "summary") {
+                event_to_index.title = tag[1]
+                event_to_index.search_vector += "\nSummary " + tag[1]
+              }
             }
+          } catch (error) {
+            console.log(`Error processing summary: ${new_event.id}`)
+          }
         }
         nostr_events_content_indexed.push(event_to_index)
         console.log(`nostr_events_content_indexed.length = ${nostr_events_content_indexed.length}`)
         if (nostr_events_content_indexed.length >= 1) {
-            try {
-                await sql`insert into nostr_event_content_indexed ${sql(nostr_events_content_indexed)} ON CONFLICT DO NOTHING;`
-            } catch (error) {
-                console.log("INSERT tsvector error")
-                console.log(error)
-            }
+          try {
+            await sql`insert into nostr_event_content_indexed ${sql(nostr_events_content_indexed)} ON CONFLICT DO NOTHING;`
+          } catch (error) {
+            console.log("INSERT tsvector error")
+            console.log(error)
+          }
         }
 
 
 
-    }
+      }
       for (const subscription of Object.keys(subscriptions)) {
-        for(const filter of subscriptions[subscription].filters) {
+        for (const filter of subscriptions[subscription].filters) {
           if (filter_event_validaor(filter, new_event)) {
             subscriptions[subscription].ws.send((JSON.stringify(["EVENT", subscription, json_parsed_data[1]])))
             break

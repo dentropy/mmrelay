@@ -1,5 +1,10 @@
-import sql from "./worker/db.js";
 import { NostrFetcher } from "nostr-fetch";
+import postgres from 'postgres'
+
+const sql = await postgres(
+  process.env.PG_CONN_STRING, {
+  ssl: { rejectUnauthorized: false }
+})
 
 // Fetch filter to scrape using Update and a Return
 let job_data = await sql`UPDATE scraping_nostr_filters_t

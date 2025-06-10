@@ -21,7 +21,9 @@ docker-compose down --volumes
 ``` bash
 
 export PG_CONN_STRING="postgres://postgres:postgres@localhost:5433/postgres"
+
 psql $PG_CONN_STRING
+select count(*) from normalized_nostr_events_t ;
 
 ./reset.sh
 # Same as the following
@@ -88,7 +90,8 @@ INSERT INTO scraping_nostr_filters_t (
 ) VALUES (
     'TODO',                       -- scraping_status
     '{"ids": [
-    "601ca9541eaaa842466d09ad1cf019c727d6bd98beb3468283c8777dc875e0f6","bee4a296e6b00bb31782e8a0984e507a603764b0073cbdfa957aa587ba8ba093",
+    "601ca9541eaaa842466d09ad1cf019c727d6bd98beb3468283c8777dc875e0f6",
+    "bee4a296e6b00bb31782e8a0984e507a603764b0073cbdfa957aa587ba8ba093",
     "1c6c90a3d2a3142e71cb5e6d6de397538e25e147ab440b4b73739d0a7bfbaa4f",
     "a7ff8b3812f0e160e62835b1ce58198f8e4abcc30059c8af0aff5c23f59b8eb9",
     "dd7568d56693cad9fa52ec862322c27fcd16affb225a53ed946a2a392a0ab83f",
@@ -120,4 +123,71 @@ WHERE id = (
     LIMIT 1
 )
 RETURNING *;
+```
+
+
+
+``` sql
+
+INSERT INTO scraping_nostr_filters_t (
+    scraping_status,
+    filter_json,
+    metadata,
+    num_results,
+    relay_url,
+    since,
+    incrementer,
+    until
+) VALUES (
+    'TODO',                       -- scraping_status
+    '{"kinds":[30166]}',                         -- filter_json
+    '{}',                         -- metadata
+    0,                            -- num_results
+    'wss://relay.nostr.watch',   -- relay_url
+    1745107200,                   -- since (Jan 1st 2020)
+    3600,                         -- incrementer of an hour
+    1749528555                    -- until (April 20th 2025)
+);
+
+INSERT INTO scraping_nostr_filters_t (
+    scraping_status,
+    filter_json,
+    metadata,
+    num_results,
+    relay_url,
+    since,
+    incrementer,
+    until
+) VALUES (
+    'TODO',                       -- scraping_status
+    '{"kinds":[30166]}',          -- filter_json
+    '{}',                         -- metadata
+    0,                            -- num_results
+    'wss://relaypag.es/',         -- relay_url
+    1745107200,                   -- since (Jan 1st 2020)
+    3600,                         -- incrementer of an hour
+    1749528555                    -- until (April 20th 2025)
+);
+
+
+INSERT INTO scraping_nostr_filters_t (
+    scraping_status,
+    filter_json,
+    metadata,
+    num_results,
+    relay_url,
+    since,
+    incrementer,
+    until
+) VALUES (
+    'TODO',                              -- scraping_status
+    '{"kinds":[30166]}',                 -- filter_json
+    '{}',                                -- metadata
+    0,                                   -- num_results
+    'wss://monitorlizard.nostr1.com/',   -- relay_url
+    1745107200,                          -- since
+    3600,                                -- incrementer of an hour
+    1749528555                           -- until
+);
+
 ```

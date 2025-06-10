@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS normalized_nostr_events_t (
     is_verified BOOLEAN
 );
 
+CREATE INDEX pubkey_normalized_nostr_events_t ON normalized_nostr_events_t (pubkey);
+
 CREATE TABLE IF NOT EXISTS nostr_event_tags_t (
     id VARCHAR,
     tag_json_index INTEGER,

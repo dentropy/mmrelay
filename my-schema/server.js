@@ -206,6 +206,10 @@ wss.on('connection', function connection(ws) {
               }`
             : sql``
           }
+        ${Object.hasOwn(filter, "authors")
+            ? sql` and normalized_nostr_events_t.pubkey = ${filter["authors"][0]}`
+            : sql``
+          }
         ${extractTagFilters(filter).length < 10 && extractTagFilters(filter).length >= 1
             ? sql`${conditions}`
             : sql``

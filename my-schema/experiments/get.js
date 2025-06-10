@@ -17,7 +17,7 @@ import { nostrGet } from './lib/nostrGet.js';
 
 
 // "wss://relay.primal.net"
-const result = await nostrGet(["ws://localhost:9090"], {"search": "bitcoin", "limit": 1000})
+const result = await nostrGet(["ws://localhost:9090"], {"limit": 1000})
 
 console.log(JSON.stringify(result, null, 2))
 console.log(`We got ${result.length} events`)

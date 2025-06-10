@@ -6,21 +6,28 @@ const sql = await postgres(
   ssl: { rejectUnauthorized: false }
 })
 
-// Fetch filter to scrape using Update and a Return
-let job_data = await sql`UPDATE scraping_nostr_filters_t
-SET 
-    scraping_status = 'RUNNING'
-WHERE id = (
-    SELECT id
-    FROM scraping_nostr_filters_t
-    WHERE 
-        scraping_status = 'TODO'
-    ORDER BY created_at DESC
-    LIMIT 1
-)
-RETURNING *;`
-console.log(job_data)
-// Log that we started scraping
+
+while (true){
+    // Fetch filter to scrape using Update and a Return
+    let job_data = await sql`UPDATE scraping_nostr_filters_t
+    SET 
+        scraping_status = 'RUNNING'
+    WHERE id = (
+        SELECT id
+        FROM scraping_nostr_filters_t
+        WHERE 
+            scraping_status = 'TODO'
+        ORDER BY created_at DESC
+        LIMIT 1
+    )
+    RETURNING *;`
+    if(job_data.length != 0){
+        await loopFetch(job_data[0], 1000)
+    } else {
+        console.log(`Waiting 3 Seocnds, Current Datetime: ${Date.now()}`)
+        await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+}
 
 // Loop Fetch Thing, Making sure to log each time
 async function loopFetch(input_params, save_to_db_amount) {
@@ -133,7 +140,6 @@ async function loopFetch(input_params, save_to_db_amount) {
     }
     console.log("DONE")
 }
-await loopFetch(job_data[0], 1000)
 
 // Update everything saying we are done
 await sql.end()

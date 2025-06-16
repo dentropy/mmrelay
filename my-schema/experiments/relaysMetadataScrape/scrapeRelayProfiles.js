@@ -6,11 +6,20 @@ const sql = await postgres(
 })
 
 let relay_list = await sql`
-select * from nostr_relay_metadata_t where success = true;
+select
+	relay_url
+from
+	nostr_relay_metadata_t
+where
+	success = true
+	-- AND relay_url not in (select relay_url from nostr_filter_scraping_logs_t);
 `
 
 for (const relay of relay_list){
-    console.log(`
+    console.log(relay.relay_url)
+    let unix_time = String(Date.now() / 1000 | 0)
+    console.log(unix_time)
+    await sql`
         INSERT INTO scraping_nostr_filters_t (
             scraping_status,
             filter_json,
@@ -22,13 +31,16 @@ for (const relay of relay_list){
             until
         ) VALUES (
             'TODO',                              -- scraping_status
-            '{"kinds":[0]}',                     -- filter_json
+            '{"kinds":[0, 10002]}',                     -- filter_json
             '{}',                                -- metadata
             0,                                   -- num_results
-            '${relay}',                          -- relay_url
-            1745107200,                          -- since
+            ${ relay.relay_url },               -- relay_url
+            0,                                   -- since
             3600,                                -- incrementer of an hour
-            ${Date.now()}                        -- until
+            ${ unix_time }                        -- until
         );    
-    `)
+    `
+    console.log(`Inserted ${relay.relay_url}`)
 }
+
+process.exit()

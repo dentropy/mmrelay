@@ -14,7 +14,7 @@ services:
       - pgadmin-data:/var/lib/pgadmin
 
   postgres_service:
-    image: postgres-trunk:latest
+    image: supabase/postgres:17.4.1.043
     container_name: postgres-trunk
     environment:
       POSTGRES_DB: postgres

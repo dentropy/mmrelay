@@ -341,7 +341,9 @@ wss.on('connection', function connection(ws) {
       }
     }
     if (json_parsed_data[0] == "CLOSE") {
-      ws.send(JSON.stringify(["NOTICE", `CLOSE message is not supported yet, you can't subscribe to real time EVENTS yet`]))
+      console.log("RECIEVED_CLOSE_MESSAGE")
+      console.log(json_parsed_data)
+      // ws.send(JSON.stringify(["NOTICE", `CLOSE message is not supported yet, you can't subscribe to real time EVENTS yet`]))
     }
   })
 })

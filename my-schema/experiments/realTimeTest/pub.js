@@ -17,8 +17,10 @@ let isGood = verifyEvent(event)
 console.log(event)
 
 import { Relay } from "nostr-tools";
-const relay = new Relay("ws://localhost:9091")
-// const relay = new Relay("wss://relay.mememaps.net")
+
+// const relay = new Relay("ws://localhost:9091")
+const relay = new Relay("wss://t.mememap.net")
+
 await relay.connect()
 let answer = await relay.publish(event)
 

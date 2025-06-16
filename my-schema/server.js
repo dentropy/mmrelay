@@ -9,7 +9,7 @@ const sql = await postgres(
   // ssl: { rejectUnauthorized: false }
 })
 
-const PORT = 9090
+const PORT = 9091
 const wss = new WebSocketServer({ port: PORT });
 let subscriptions = {}
 
@@ -224,7 +224,10 @@ wss.on('connection', function connection(ws) {
       `;
           console.log(results)
           for (const result of results) {
-            ws.send(JSON.stringify(["EVENT", subscription_id, JSON.parse(result.raw_event)]))
+            let raw_event = JSON.parse(result.raw_event)
+            delete raw_event.num_tags
+            delete raw_event.is_verified
+            ws.send(JSON.stringify(["EVENT", subscription_id, raw_event]))
           }
         }
       } catch (error) {
@@ -334,7 +337,7 @@ wss.on('connection', function connection(ws) {
       for (const subscription of Object.keys(subscriptions)) {
         for (const filter of subscriptions[subscription].filters) {
           if (filter_event_validaor(filter, new_event)) {
-            subscriptions[subscription].ws.send((JSON.stringify(["EVENT", subscription, json_parsed_data[1]])))
+            subscriptions[subscription].ws.send((JSON.stringify(["EVENT", subscription, JSON.parse(json_parsed_data[1].raw_event)])))
             break
           }
         }

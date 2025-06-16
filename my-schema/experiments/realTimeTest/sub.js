@@ -5,8 +5,8 @@ import { generateSecretKey, getPublicKey, finalizeEvent, verifyEvent } from 'nos
 // const wsPublish = new WebSocket("ws://localhost:9090")
 // let kind_stats = {}
 
-// const wsListen = new WebSocket("https://archive.mememaps.net/")
-const wsListen = new WebSocket("http://localhost:9091")
+const wsListen = new WebSocket("https://t.mememap.net/")
+// const wsListen = new WebSocket("http://localhost:9091")
 
 
 wsListen.addEventListener('open', async function (event) {

@@ -173,57 +173,63 @@ wss.on('connection', function connection(ws) {
         created_at: new Date(),
         ws: ws
       }
-      for (const filter of filters) {
-        const conditions = extractTagFilters(filter).map((value) => sql` AND normalized_nostr_events_t.tags LIKE ${value} `);
-        let results = await sql`
+      try {
+        for (const filter of filters) {
+          const conditions = extractTagFilters(filter).map((value) => sql` AND normalized_nostr_events_t.tags LIKE ${value} `);
+          let results = await sql`
         select
           normalized_nostr_events_t.raw_event
         from normalized_nostr_events_t
         ${Object.hasOwn(filter, "search")
-            ? sql` JOIN nostr_event_content_indexed ON normalized_nostr_events_t.id = nostr_event_content_indexed.id`
-            : sql``
-          }
+              ? sql` JOIN nostr_event_content_indexed ON normalized_nostr_events_t.id = nostr_event_content_indexed.id`
+              : sql``
+            }
         WHERE 1 = 1
         ${Object.hasOwn(filter, "search")
-            ? sql` and nostr_event_content_indexed.search_vector @@ websearch_to_tsquery('english', ${filter.search})`
-            : sql``
-          }
+              ? sql` and nostr_event_content_indexed.search_vector @@ websearch_to_tsquery('english', ${filter.search})`
+              : sql``
+            }
         ${Object.hasOwn(filter, "ids")
-            ? sql` and normalized_nostr_events_t.id in ${sql(filter["ids"])}`
-            : sql``
-          }
+              ? sql` and normalized_nostr_events_t.id in ${sql(filter["ids"])}`
+              : sql``
+            }
         ${Object.hasOwn(filter, "kinds")
-            ? sql` and normalized_nostr_events_t.kind in ${sql(filter["kinds"])}`
-            : sql``
-          }
+              ? sql` and normalized_nostr_events_t.kind in ${sql(filter["kinds"])}`
+              : sql``
+            }
         ${Object.hasOwn(filter, "since")
-            ? sql` and normalized_nostr_events_t.created_at > ${Number(filter["since"])
-              }`
-            : sql``
-          }
+              ? sql` and normalized_nostr_events_t.created_at > ${Number(filter["since"])
+                }`
+              : sql``
+            }
         ${Object.hasOwn(filter, "until")
-            ? sql` and normalized_nostr_events_t.created_at < ${Number(filter["until"])
-              }`
-            : sql``
-          }
+              ? sql` and normalized_nostr_events_t.created_at < ${Number(filter["until"])
+                }`
+              : sql``
+            }
         ${Object.hasOwn(filter, "authors")
-            ? sql` and normalized_nostr_events_t.pubkey = ${filter["authors"][0]}`
-            : sql``
-          }
+              ? sql` and normalized_nostr_events_t.pubkey = ${filter["authors"][0]}`
+              : sql``
+            }
         ${extractTagFilters(filter).length < 10 && extractTagFilters(filter).length >= 1
-            ? sql`${conditions}`
-            : sql``
-          }
+              ? sql`${conditions}`
+              : sql``
+            }
         ${Object.hasOwn(filter, "limit")
-            ? sql`order by normalized_nostr_events_t.created_at desc limit ${Number(filter["limit"])
-              }`
-            : sql`limit 500`
-          }
+              ? sql`order by normalized_nostr_events_t.created_at desc limit ${Number(filter["limit"])
+                }`
+              : sql`limit 500`
+            }
       `;
-        console.log(results)
-        for (const result of results) {
-          ws.send(JSON.stringify(["EVENT", subscription_id, JSON.parse(result.raw_event)]))
+          console.log(results)
+          for (const result of results) {
+            ws.send(JSON.stringify(["EVENT", subscription_id, JSON.parse(result.raw_event)]))
+          }
         }
+      } catch (error) {
+        console.log(error)
+        ws.send(JSON.stringify(["NOTICE", `Could not Process Event`]))
+        return
       }
       // ws.send(JSON.stringify(["CLOSED", subscription_id, "We don't have EOSE implimented"]))
       // delete subscriptions[subscription_id]

@@ -5,7 +5,8 @@ import postgres from 'postgres'
 
 const sql = await postgres(
   process.env.PG_CONN_STRING, {
-  ssl: { rejectUnauthorized: false }
+  ssl: false
+  // ssl: { rejectUnauthorized: false }
 })
 
 const PORT = 9090

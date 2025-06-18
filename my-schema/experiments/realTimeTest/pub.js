@@ -19,7 +19,8 @@ console.log(event)
 import { Relay } from "nostr-tools";
 
 // const relay = new Relay("ws://localhost:9091")
-const relay = new Relay("wss://t.mememap.net")
+let relay_url = process.env.RELAY_URL || "wss://t.mememap.net";
+const relay = new Relay(relay_url)
 
 await relay.connect()
 let answer = await relay.publish(event)

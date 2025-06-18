@@ -5,7 +5,8 @@ import { generateSecretKey, getPublicKey, finalizeEvent, verifyEvent } from 'nos
 // const wsPublish = new WebSocket("ws://localhost:9090")
 // let kind_stats = {}
 
-const wsListen = new WebSocket("https://t.mememap.net/")
+let relay_url = process.env.RELAY_URL || "wss://t.mememap.net";
+const wsListen = new WebSocket(relay_url)
 // const wsListen = new WebSocket("http://localhost:9091")
 
 

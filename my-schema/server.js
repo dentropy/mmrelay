@@ -1,3 +1,4 @@
+// TEST
 import { WebSocketServer } from 'ws';
 import Ajv from "ajv";
 import { verifyEvent } from 'nostr-tools/pure'
@@ -9,7 +10,7 @@ const sql = await postgres(
   // ssl: { rejectUnauthorized: false }
 })
 
-const PORT = 9091
+const PORT = process.env.PORT || 9090;
 const wss = new WebSocketServer({ port: PORT });
 let subscriptions = {}
 
@@ -174,6 +175,9 @@ wss.on('connection', function connection(ws) {
         created_at: new Date(),
         ws: ws
       }
+      ws.subscription_id = subscription_id
+      console.log("subscriptions")
+      console.log(subscriptions)
       try {
         for (const filter of filters) {
           const conditions = extractTagFilters(filter).map((value) => sql` AND normalized_nostr_events_t.tags LIKE ${value} `);
@@ -337,6 +341,8 @@ wss.on('connection', function connection(ws) {
       for (const subscription of Object.keys(subscriptions)) {
         for (const filter of subscriptions[subscription].filters) {
           if (filter_event_validaor(filter, new_event)) {
+            console.log("IN EVNET SUBSCRIPTIONS")
+            console.log(subscriptions)
             subscriptions[subscription].ws.send((JSON.stringify(["EVENT", subscription, JSON.parse(json_parsed_data[1].raw_event)])))
             break
           }
@@ -348,6 +354,9 @@ wss.on('connection', function connection(ws) {
       console.log(json_parsed_data)
       // ws.send(JSON.stringify(["NOTICE", `CLOSE message is not supported yet, you can't subscribe to real time EVENTS yet`]))
     }
+  })
+  ws.on('close', async function closeWS() {
+    delete subscriptions[ws.subscription_id]
   })
 })
 

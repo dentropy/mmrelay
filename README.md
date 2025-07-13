@@ -1,3 +1,9 @@
+# CHECK OUT https://github.com/dentropy/nostr-daemon/tree/master/docker/relays to run these relays
+
+# CHECK OUT https://github.com/dentropy/nostr-daemon/tree/master/docker/relays to run these relays
+
+# CHECK OUT https://github.com/dentropy/nostr-daemon/tree/master/docker/relays to run these relays
+
 # nostr-rs-relay
 
 ``` bash

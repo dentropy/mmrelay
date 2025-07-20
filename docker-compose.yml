@@ -34,7 +34,7 @@ services:
     container_name: mmrelay
     hostname: mmrelay
     environment:
-      PG_CONN_STRING: postgres://postgres:postgres@mmrelaypostgres:5433/postgres
+      PG_CONN_STRING: postgres://postgres:postgres@mmrelaypostgres:5432/postgres
     ports:
       - "9090:9090"
     restart: always

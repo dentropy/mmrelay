@@ -6,3 +6,4 @@ DROP TABLE nip05_metadata_t;
 DROP TABLE nostr_event_content_indexed;
 DROP TABLE non_standard_nostr_event_tags_t;
 DROP TABLE nostr_event_tags_t;
+DROP TABLE nostr_relay_metadata_t;

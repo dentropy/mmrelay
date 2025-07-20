@@ -156,7 +156,6 @@ FOR EACH ROW
 EXECUTE PROCEDURE trigger_set_timestamp();
 
 -- Relay Metadata Stuff
-
 CREATE TABLE IF NOT EXISTS nostr_event_on_relay_t (
     id VARCHAR,
     relay_url VARCHAR,
@@ -168,7 +167,6 @@ CREATE TABLE IF NOT EXISTS nostr_event_on_relay_t (
 );
 
 -- To Actually Start Using
-
 CREATE TABLE IF NOT EXISTS nip05_metadata_t (
     pubkey VARCHAR,
     username VARCHAR,
@@ -189,6 +187,8 @@ CREATE TABLE IF NOT EXISTS nostr_event_content_indexed (
         REFERENCES normalized_nostr_events_t (id)
         ON DELETE CASCADE
 );
+
+
 ALTER TABLE nostr_event_content_indexed
 ADD COLUMN search_vector tsvector
 GENERATED ALWAYS AS (to_tsvector('english', coalesce(title, '') || ' ' || coalesce(summary, '') || ' ' || coalesce(content, ''))) STORED;

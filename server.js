@@ -3,12 +3,26 @@ import { WebSocketServer } from 'ws';
 import Ajv from "ajv";
 import { verifyEvent } from 'nostr-tools/pure'
 import postgres from 'postgres'
+import fs from 'fs';
 
 const sql = await postgres(
   process.env.PG_CONN_STRING, {
   ssl: false
   // ssl: { rejectUnauthorized: false }
 })
+
+
+// For some reason this doesn't want to work
+// let schema = fs.readFileSync('./database/schema.sql', "utf-8")
+// for (const table of schema.split("\n\n")){
+//   console.log(`${table}`)
+//   try {
+//      await sql`${table}` 
+//   } catch (error) {
+//     console.log(error)
+//   }
+// }
+
 
 const PORT = process.env.PORT || 9090;
 const wss = new WebSocketServer({ port: PORT });

@@ -14,11 +14,14 @@ services:
   #     - pgadmin-data:/var/lib/pgadmin
   #   networks:
   #     - internal-network
+  #     - nostr-daemon
 
   mmrelaypostgres:
     image: supabase/postgres:17.4.1.043
     container_name: mmrelaypostgres
     hostname: mmrelaypostgres
+    ports:
+      - "5433:5432"
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
@@ -27,11 +30,11 @@ services:
       # PGDATA: /var/lib/postgresql/data2
     volumes:
       - postgres-data:/var/lib/postgresql/
-    # ports:
-    #   - "5433:5432"
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/init.sql
     restart: always
     networks:
       - internal-network
+      - nostr-daemon
 
   mmrelay:
     image: mmrelay

@@ -20,8 +20,8 @@ services:
     image: supabase/postgres:17.4.1.043
     container_name: mmrelaypostgres
     hostname: mmrelaypostgres
-    ports:
-      - "5433:5432"
+    # ports:
+    #   - "5433:5432"
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres

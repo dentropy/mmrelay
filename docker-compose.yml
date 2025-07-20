@@ -33,7 +33,7 @@ services:
     networks:
       - internal-network
 
-  mmrelaypostgres:
+  mmrelay:
     image: mmrelay
     container_name: mmrelay
     hostname: mmrelay

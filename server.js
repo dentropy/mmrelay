@@ -12,7 +12,7 @@ const sql = await postgres(
 })
 
 
-// For some reason this doesn't want to work
+// For some reason this doesn't want to work we use postgres init script in docker-compose instead
 // let schema = fs.readFileSync('./database/schema.sql', "utf-8")
 // for (const table of schema.split("\n\n")){
 //   console.log(`${table}`)

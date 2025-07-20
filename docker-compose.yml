@@ -12,6 +12,8 @@ services:
   #     - my-network
   #   volumes:
   #     - pgadmin-data:/var/lib/pgadmin
+  #   networks:
+  #     - internal-network
 
   mmrelaypostgres:
     image: supabase/postgres:17.4.1.043
@@ -28,8 +30,10 @@ services:
     # ports:
     #   - "5433:5432"
     restart: always
+    networks:
+      - internal-network
 
-  mmrelay:
+  mmrelaypostgres:
     image: mmrelay
     container_name: mmrelay
     hostname: mmrelay
@@ -40,10 +44,13 @@ services:
     restart: always
     networks:
       - nostr-daemon
+      - internal-network
 
 networks:
   nostr-daemon:
     external: true
+  internal-network:
+      internal: true
 
 volumes:
   pgadmin-data:
